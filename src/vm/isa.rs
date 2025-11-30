@@ -58,7 +58,7 @@ pub enum Opcode {
     // Comparison result goes to accumulator:
     // * left value bigger = -1
     // * right value bigger = 1
-    // * both are equal = 0 (zero flag will be turned on)
+    // * both are equal = 0
 
     // ---| Movement |---
 

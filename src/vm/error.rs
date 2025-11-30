@@ -8,6 +8,12 @@ pub enum MvmError {
     #[error("segmentation fault (address: {0})")]
     SegmentationFault(u64),
 
+    #[error("memory is out of bounds")]
+    OutOfBounds,
+
+    #[error("write entry rejected by system")]
+    WriteEntryRejected,
+
     #[error("io module returned error")]
     IOError(#[from] std::io::Error),
 
