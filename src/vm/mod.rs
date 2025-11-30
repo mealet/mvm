@@ -95,7 +95,7 @@ impl VM {
 
         while self.running {
             let instruction = self.fetch_u8()?;
-            self.execute_instruction(instruction);
+            self.execute_instruction(instruction)?;
         }
 
         Ok(())
@@ -109,6 +109,18 @@ impl VM {
 
     pub fn set_register(&mut self, index: u64, value: u64) -> Result<(), MvmError> {
         self.registers.set_u64(index, value)
+    }
+
+    fn peek_byte(&mut self) -> Result<u8, MvmError> {
+        let instruction_ptr = self.get_register(R_INSTRUCTION_POINTER)?;
+        self.memory.get_u8(instruction_ptr)
+    }
+
+    fn step_back(&mut self) -> Result<u8, MvmError> {
+        let instruction_ptr = self.get_register(R_INSTRUCTION_POINTER)?;
+        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_sub(1));
+
+        self.memory.get_u8(instruction_ptr.wrapping_sub(1))
     }
 
     fn fetch_u8(&mut self) -> Result<u8, MvmError> {
@@ -147,13 +159,27 @@ impl VM {
         match opcode {
             Opcode::Halt => {
                 self.running = false;
+                let _ = self.step_back()?;
             },
             Opcode::Return => todo!(),
             Opcode::Call => todo!(),
             Opcode::Interrupt => todo!(),
 
-            Opcode::DataSection => todo!(),
-            Opcode::TextSection => todo!(),
+            Opcode::DataSection => {
+                while let Ok(instr) = self.fetch_u8() {
+                    if instr == 0xff &&
+                    let Ok(next_instr) = self.fetch_u8()
+                    && next_instr == Opcode::TextSection as u8 {
+                        let _ = self.step_back()?;
+                        return Ok(())
+                    }
+                }
+
+                if self.peek_byte().is_err() {
+                    return Err(MvmError::NoTextSection)
+                }
+            },
+            Opcode::TextSection => {},
 
             Opcode::Mov8 => todo!(),
             Opcode::Mov16 => todo!(),
@@ -364,6 +390,42 @@ mod tests {
 
         assert_eq!(vm.fetch_u64()?, 70123);
         assert_eq!(vm.fetch_u64()?, 123000);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_skip_data_section_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(128, 16)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            1, 2, 3, 4,
+            0xff,
+            Opcode::TextSection as u8,
+            Opcode::Halt as u8,
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.peek_byte()?, Opcode::Halt as u8);
+        Ok(())
+    }
+
+    #[test]
+    fn vm_skip_data_section_error_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(128, 16)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            1, 2, 3, 4,
+            Opcode::Halt as u8,
+        ];
+
+        vm.insert_program(&program)?;
+
+        assert!(vm.run().is_err());
 
         Ok(())
     }

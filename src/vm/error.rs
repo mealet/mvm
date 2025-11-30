@@ -14,6 +14,9 @@ pub enum MvmError {
     #[error("write entry rejected by system")]
     WriteEntryRejected,
 
+    #[error("no program `text` section found")]
+    NoTextSection,
+
     #[error("io module returned error")]
     IOError(#[from] std::io::Error),
 
