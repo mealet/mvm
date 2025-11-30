@@ -85,8 +85,17 @@ impl VM {
         }
 
         self.set_register(R_MEMORY_POINTER, memptr as u64);
+        self.set_register(R_INSTRUCTION_POINTER, 0);
 
         Ok(())
+    }
+
+    pub fn run(&mut self) {
+        self.running = true;
+
+        while self.running {
+
+        }
     }
 }
 
@@ -97,6 +106,41 @@ impl VM {
 
     pub fn set_register(&mut self, index: u64, value: u64) -> Result<(), MvmError> {
         self.registers.set_u64(index, value)
+    }
+
+    fn fetch_u8(&mut self) -> Result<u8, MvmError> {
+        let instruction_ptr = self.get_register(R_INSTRUCTION_POINTER)?;
+        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_add(1));
+
+        self.memory.get_u8(instruction_ptr)
+    }
+
+    fn fetch_u16(&mut self) -> Result<u16, MvmError> {
+        let instruction_ptr = self.get_register(R_INSTRUCTION_POINTER)?;
+        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_add(2));
+
+        self.memory.get_u16(instruction_ptr)
+    }
+
+    fn fetch_u32(&mut self) -> Result<u32, MvmError> {
+        let instruction_ptr = self.get_register(R_INSTRUCTION_POINTER)?;
+        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_add(4));
+
+        self.memory.get_u32(instruction_ptr)
+    }
+
+    fn fetch_u64(&mut self) -> Result<u64, MvmError> {
+        let instruction_ptr = self.get_register(R_INSTRUCTION_POINTER)?;
+        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_add(8));
+
+        self.memory.get_u64(instruction_ptr)
+    }
+}
+
+impl VM {
+    fn execute_instruction(&mut self, instruction: u8) -> Result<(), MvmError> {
+
+        Ok(())
     }
 }
 
@@ -137,6 +181,7 @@ mod tests {
         assert_eq!(vm.memory.get_u8(3)?, Opcode::Halt as u8);
 
         assert_eq!(vm.get_register(R_MEMORY_POINTER)?, 4);
+        assert_eq!(vm.get_register(R_INSTRUCTION_POINTER)?, 0);
 
         Ok(())
     }
@@ -164,6 +209,102 @@ mod tests {
         assert_eq!(vm.memory.get_u8(3)?, program[3]);
 
         assert_eq!(vm.get_register(R_MEMORY_POINTER)?, 4);
+        assert_eq!(vm.get_register(R_INSTRUCTION_POINTER)?, 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_fetch_u8_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(128, 16)?;
+
+        let program = [
+            1,
+            2,
+            3,
+        ];
+
+        vm.insert_program(&program)?;
+
+        assert_eq!(vm.fetch_u8()?, 1);
+        assert_eq!(vm.fetch_u8()?, 2);
+        assert_eq!(vm.fetch_u8()?, 3);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_fetch_u16_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(128, 16)?;
+
+        let program = [
+            u16::to_be_bytes(400)[0],
+            u16::to_be_bytes(400)[1],
+
+            u16::to_be_bytes(500)[0],
+            u16::to_be_bytes(500)[1],
+        ];
+
+        vm.insert_program(&program)?;
+
+        assert_eq!(vm.fetch_u16()?, 400);
+        assert_eq!(vm.fetch_u16()?, 500);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_fetch_u32_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(128, 16)?;
+
+        let program = [
+            u32::to_be_bytes(70123)[0],
+            u32::to_be_bytes(70123)[1],
+            u32::to_be_bytes(70123)[2],
+            u32::to_be_bytes(70123)[3],
+
+            u32::to_be_bytes(123000)[0],
+            u32::to_be_bytes(123000)[1],
+            u32::to_be_bytes(123000)[2],
+            u32::to_be_bytes(123000)[3],
+        ];
+
+        vm.insert_program(&program)?;
+
+        assert_eq!(vm.fetch_u32()?, 70123);
+        assert_eq!(vm.fetch_u32()?, 123000);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_fetch_u64_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(128, 16)?;
+
+        let program = [
+            u64::to_be_bytes(70123)[0],
+            u64::to_be_bytes(70123)[1],
+            u64::to_be_bytes(70123)[2],
+            u64::to_be_bytes(70123)[3],
+            u64::to_be_bytes(70123)[4],
+            u64::to_be_bytes(70123)[5],
+            u64::to_be_bytes(70123)[6],
+            u64::to_be_bytes(70123)[7],
+
+            u64::to_be_bytes(123000)[0],
+            u64::to_be_bytes(123000)[1],
+            u64::to_be_bytes(123000)[2],
+            u64::to_be_bytes(123000)[3],
+            u64::to_be_bytes(123000)[4],
+            u64::to_be_bytes(123000)[5],
+            u64::to_be_bytes(123000)[6],
+            u64::to_be_bytes(123000)[7],
+        ];
+
+        vm.insert_program(&program)?;
+
+        assert_eq!(vm.fetch_u64()?, 70123);
+        assert_eq!(vm.fetch_u64()?, 123000);
 
         Ok(())
     }

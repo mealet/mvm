@@ -51,7 +51,7 @@ impl MemoryBuffer {
         }
 
         Ok(
-            u16::from_le_bytes([
+            u16::from_be_bytes([
                 self.inner[address as usize],
                 self.inner[(address + 1) as usize]
             ])
@@ -65,7 +65,7 @@ impl MemoryBuffer {
             return Err(MvmError::SegmentationFault(address));
         }
 
-        let bytes = value.to_le_bytes();
+        let bytes = value.to_be_bytes();
 
         (
             self.inner[address as usize],
@@ -88,7 +88,7 @@ impl MemoryBuffer {
         }
 
         Ok(
-            u32::from_le_bytes([
+            u32::from_be_bytes([
                 self.inner[address as usize],
                 self.inner[(address + 1) as usize],
                 self.inner[(address + 2) as usize],
@@ -104,7 +104,7 @@ impl MemoryBuffer {
             return Err(MvmError::SegmentationFault(address));
         }
 
-        let bytes = value.to_le_bytes();
+        let bytes = value.to_be_bytes();
 
         (
             self.inner[address as usize],
@@ -131,7 +131,7 @@ impl MemoryBuffer {
         }
 
         Ok(
-            u64::from_le_bytes([
+            u64::from_be_bytes([
                 self.inner[address as usize],
                 self.inner[(address + 1) as usize],
                 self.inner[(address + 2) as usize],
@@ -151,7 +151,7 @@ impl MemoryBuffer {
             return Err(MvmError::SegmentationFault(address));
         }
 
-        let bytes = value.to_le_bytes();
+        let bytes = value.to_be_bytes();
 
         (
             self.inner[address as usize],
