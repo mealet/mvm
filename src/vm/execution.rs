@@ -111,7 +111,16 @@ impl VM {
 
                 self.set_register(destination as u64, left + right)?;
             },
-            Opcode::XAdd => todo!(),
+            Opcode::XAdd => {
+                let destination = self.fetch_u8()?;
+                let src = self.fetch_u8()?;
+
+                let left = self.get_register(destination as u64)?;
+                let right = self.get_register(src as u64)?;
+
+                self.set_register(destination as u64, left + right)?;
+                self.set_register(src as u64, left)?;
+            },
             
             Opcode::Sub8 => todo!(),
             Opcode::Sub16 => todo!(),
@@ -543,6 +552,38 @@ mod tests {
         vm.run()?;
 
         assert_eq!(vm.get_register(R0)?, 123 + 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_xadd_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 2);
+        vm.set_register(R1, 1);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0, 0, 0, 0, 0, 0, 123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // add %r0 $123
+            Opcode::XAdd as u8,
+            R0 as u8,
+            R1 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 2 + 1);
+        assert_eq!(vm.get_register(R1)?, 2);
 
         Ok(())
     }
