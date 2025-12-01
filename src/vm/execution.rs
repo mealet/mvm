@@ -70,11 +70,47 @@ impl VM {
                 self.set_register(destination as u64, value as u64)?;
             },
 
-            Opcode::Add8 => todo!(),
-            Opcode::Add16 => todo!(),
-            Opcode::Add32 => todo!(),
-            Opcode::Add64 => todo!(),
-            Opcode::AddR2R => todo!(),
+            Opcode::Add8 => {
+                let destination = self.fetch_u8()?;
+                let address = self.fetch_u64()?;
+                let value = self.memory.get_u8(address)?;
+
+                let dest_value = self.get_register(destination as u64)?;
+                self.set_register(destination as u64, dest_value + value as u64);
+            },
+            Opcode::Add16 => {
+                let destination = self.fetch_u8()?;
+                let address = self.fetch_u64()?;
+                let value = self.memory.get_u16(address)?;
+
+                let dest_value = self.get_register(destination as u64)?;
+                self.set_register(destination as u64, dest_value + value as u64);
+            },
+            Opcode::Add32 => {
+                let destination = self.fetch_u8()?;
+                let address = self.fetch_u64()?;
+                let value = self.memory.get_u32(address)?;
+
+                let dest_value = self.get_register(destination as u64)?;
+                self.set_register(destination as u64, dest_value + value as u64);
+            },
+            Opcode::Add64 => {
+                let destination = self.fetch_u8()?;
+                let address = self.fetch_u64()?;
+                let value = self.memory.get_u64(address)?;
+
+                let dest_value = self.get_register(destination as u64)?;
+                self.set_register(destination as u64, dest_value + value as u64);
+            },
+            Opcode::AddR2R => {
+                let destination = self.fetch_u8()?;
+                let src = self.fetch_u8()?;
+
+                let left = self.get_register(destination as u64)?;
+                let right = self.get_register(src as u64)?;
+
+                self.set_register(destination as u64, left + right)?;
+            },
             Opcode::XAdd => todo!(),
             
             Opcode::Sub8 => todo!(),
@@ -332,4 +368,182 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn instruction_add8_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // add %r0 $123
+            Opcode::Add8 as u8,
+            R0 as u8,
+            0, // -|
+            0, //  |
+            0, //  |
+            0, //  |=| 64-bit address
+            0, //  |=| to data section
+            0, //  |
+            0, //  |
+            1, // -|
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123 + 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_add16_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // add %r0 $123
+            Opcode::Add16 as u8,
+            R0 as u8,
+            0, // -|
+            0, //  |
+            0, //  |
+            0, //  |=| 64-bit address
+            0, //  |=| to data section
+            0, //  |
+            0, //  |
+            1, // -|
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123 + 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_add32_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0, 0, 123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // add %r0 $123
+            Opcode::Add32 as u8,
+            R0 as u8,
+            0, // -|
+            0, //  |
+            0, //  |
+            0, //  |=| 64-bit address
+            0, //  |=| to data section
+            0, //  |
+            0, //  |
+            1, // -|
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123 + 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_add64_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0, 0, 0, 0, 0, 0, 123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // add %r0 $123
+            Opcode::Add64 as u8,
+            R0 as u8,
+            0, // -|
+            0, //  |
+            0, //  |
+            0, //  |=| 64-bit address
+            0, //  |=| to data section
+            0, //  |
+            0, //  |
+            1, // -|
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123 + 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_add_r2r_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+        vm.set_register(R1, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0, 0, 0, 0, 0, 0, 123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // add %r0 $123
+            Opcode::AddR2R as u8,
+            R0 as u8,
+            R1 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123 + 123);
+
+        Ok(())
+    }
 }

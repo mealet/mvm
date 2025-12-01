@@ -52,7 +52,7 @@ impl VM {
 
         let mut vm = Self {
             memory,
-            registers: MemoryBuffer::new(64),
+            registers: MemoryBuffer::new(15 * 8),
             running: false,
             exit_code: 1,
         };
@@ -106,11 +106,11 @@ impl VM {
 
 impl VM {
     pub fn get_register(&mut self, index: u64) -> Result<u64, MvmError> {
-        self.registers.get_u64(index)
+        self.registers.get_u64(index * 8)
     }
 
     pub fn set_register(&mut self, index: u64, value: u64) -> Result<(), MvmError> {
-        self.registers.set_u64(index, value)
+        self.registers.set_u64(index * 8, value)
     }
 
     fn peek_byte(&mut self) -> Result<u8, MvmError> {
@@ -163,7 +163,6 @@ mod tests {
         let vm = VM::new(128, 16)?;
 
         assert!(vm.memory.len() == 128);
-        assert!(vm.registers.len() == 64);
         assert!(!vm.running);
 
         Ok(())
@@ -174,7 +173,6 @@ mod tests {
         let mut vm = VM::new(128, 16)?;
 
         assert!(vm.memory.len() == 128);
-        assert!(vm.registers.len() == 64);
         assert!(!vm.running);
 
         let program = [
@@ -201,7 +199,6 @@ mod tests {
         let mut vm = VM::new(128, 16)?;
 
         assert!(vm.memory.len() == 128);
-        assert!(vm.registers.len() == 64);
         assert!(!vm.running);
 
         let program = [
@@ -315,6 +312,45 @@ mod tests {
 
         assert_eq!(vm.fetch_u64()?, 70123);
         assert_eq!(vm.fetch_u64()?, 123000);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_set_register_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(128, 16)?;
+
+        vm.set_register(R0, 123);
+        vm.set_register(R1, 123);
+        vm.set_register(R2, 123);
+        vm.set_register(R3, 123);
+        vm.set_register(R4, 123);
+        vm.set_register(R5, 123);
+        vm.set_register(R6, 123);
+        vm.set_register(R7, 123);
+        vm.set_register(R8, 123);
+        vm.set_register(R_SYSTEM_CALL, 123);
+        vm.set_register(R_ACCUMULATOR, 123);
+        vm.set_register(R_INSTRUCTION_POINTER, 123);
+        vm.set_register(R_STACK_POINTER, 123);
+        vm.set_register(R_FRAME_POINTER, 123);
+        vm.set_register(R_MEMORY_POINTER, 123);
+
+        assert_eq!(vm.get_register(R0)?, 123);
+        assert_eq!(vm.get_register(R1)?, 123);
+        assert_eq!(vm.get_register(R2)?, 123);
+        assert_eq!(vm.get_register(R3)?, 123);
+        assert_eq!(vm.get_register(R4)?, 123);
+        assert_eq!(vm.get_register(R5)?, 123);
+        assert_eq!(vm.get_register(R6)?, 123);
+        assert_eq!(vm.get_register(R7)?, 123);
+        assert_eq!(vm.get_register(R8)?, 123);
+        assert_eq!(vm.get_register(R_SYSTEM_CALL)?, 123);
+        assert_eq!(vm.get_register(R_ACCUMULATOR)?, 123);
+        assert_eq!(vm.get_register(R_INSTRUCTION_POINTER)?, 123);
+        assert_eq!(vm.get_register(R_STACK_POINTER)?, 123);
+        assert_eq!(vm.get_register(R_FRAME_POINTER)?, 123);
+        assert_eq!(vm.get_register(R_MEMORY_POINTER)?, 123);
 
         Ok(())
     }

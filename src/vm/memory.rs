@@ -199,4 +199,23 @@ mod tests {
         
         Ok(())
     }
+
+    #[test]
+    fn no_overwrite_memory_test() -> Result<(), MvmError> {
+        let mut memory = MemoryBuffer::new(32);
+
+        memory.set_u8(0, 123)?;
+        memory.set_u16(1, 123)?;
+        memory.set_u32(3, 123)?;
+        memory.set_u64(7, 123)?;
+        memory.set_u64(15, 123)?;
+
+        assert_eq!(memory.get_u8(0)?, 123);
+        assert_eq!(memory.get_u16(1)?, 123);
+        assert_eq!(memory.get_u32(3)?, 123);
+        assert_eq!(memory.get_u64(7)?, 123);
+        assert_eq!(memory.get_u64(15)?, 123);
+
+        Ok(())
+    }
 }
