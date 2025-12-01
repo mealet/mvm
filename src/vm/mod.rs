@@ -318,40 +318,4 @@ mod tests {
 
         Ok(())
     }
-
-    #[test]
-    fn vm_skip_data_section_test() -> Result<(), MvmError> {
-        let mut vm = VM::new(128, 16)?;
-
-        let program = [
-            Opcode::DataSection as u8,
-            1, 2, 3, 4,
-            0xff,
-            Opcode::TextSection as u8,
-            Opcode::Halt as u8,
-        ];
-
-        vm.insert_program(&program)?;
-        vm.run()?;
-
-        assert_eq!(vm.peek_byte()?, Opcode::Halt as u8);
-        Ok(())
-    }
-
-    #[test]
-    fn vm_skip_data_section_error_test() -> Result<(), MvmError> {
-        let mut vm = VM::new(128, 16)?;
-
-        let program = [
-            Opcode::DataSection as u8,
-            1, 2, 3, 4,
-            Opcode::Halt as u8,
-        ];
-
-        vm.insert_program(&program)?;
-
-        assert!(vm.run().is_err());
-
-        Ok(())
-    }
 }

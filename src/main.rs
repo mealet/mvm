@@ -1,7 +1,7 @@
 // TODO: Remove this when release
 #![allow(unused)]
 
-mod vm;
+pub mod vm;
 
 fn main() {
     println!("Hello, world!");

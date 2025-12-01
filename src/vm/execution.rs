@@ -1,4 +1,9 @@
-use super::{VM, Opcode, MvmError};
+use super::{
+    VM, Opcode, MvmError,
+    R0, R1, R2, R3, R4, R5, R6, R7, R8,
+    R_SYSTEM_CALL, R_ACCUMULATOR, R_INSTRUCTION_POINTER,
+    R_STACK_POINTER, R_FRAME_POINTER, R_MEMORY_POINTER
+};
 
 impl VM {
     pub fn execute_instruction(&mut self, instruction: u8) -> Result<(), MvmError> {
@@ -29,11 +34,41 @@ impl VM {
             },
             Opcode::TextSection => {},
 
-            Opcode::Mov8 => todo!(),
-            Opcode::Mov16 => todo!(),
-            Opcode::Mov32 => todo!(),
-            Opcode::Mov64 => todo!(),
-            Opcode::MovR2R => todo!(),
+            Opcode::Mov8 => {
+                let destination = self.fetch_u8()?;
+                let address = self.fetch_u64()?;
+
+                let value = self.memory.get_u8(address)?;
+                self.set_register(destination as u64, value as u64)?;
+            },
+            Opcode::Mov16 => {
+                let destination = self.fetch_u8()?;
+                let address = self.fetch_u64()?;
+
+                let value = self.memory.get_u16(address)?;
+                self.set_register(destination as u64, value as u64)?;
+            },
+            Opcode::Mov32 => {
+                let destination = self.fetch_u8()?;
+                let address = self.fetch_u64()?;
+
+                let value = self.memory.get_u32(address)?;
+                self.set_register(destination as u64, value as u64)?;
+            },
+            Opcode::Mov64 => {
+                let destination = self.fetch_u8()?;
+                let address = self.fetch_u64()?;
+
+                let value = self.memory.get_u64(address)?;
+                self.set_register(destination as u64, value as u64)?;
+            },
+            Opcode::MovR2R => {
+                let destination = self.fetch_u8()?;
+                let src = self.fetch_u8()?;
+
+                let value = self.get_register(src as u64)?;
+                self.set_register(destination as u64, value as u64)?;
+            },
 
             Opcode::Add8 => todo!(),
             Opcode::Add16 => todo!(),
@@ -75,4 +110,226 @@ impl VM {
 
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn vm_skip_data_section_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            1, 2, 3, 4,
+            0xff,
+            Opcode::TextSection as u8,
+            Opcode::Halt as u8,
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.peek_byte()?, Opcode::Halt as u8);
+        Ok(())
+    }
+
+    #[test]
+    fn vm_skip_data_section_error_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            1, 2, 3, 4,
+            Opcode::Halt as u8,
+        ];
+
+        vm.insert_program(&program)?;
+
+        assert!(vm.run().is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_mov8_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // mov %r0 $123
+            Opcode::Mov8 as u8,
+            R0 as u8,
+            0, // -|
+            0, //  |
+            0, //  |
+            0, //  |=| 64-bit address
+            0, //  |=| to data section
+            0, //  |
+            0, //  |
+            1, // -|
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_mov16_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0,
+            123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // mov %r0 $123
+            Opcode::Mov16 as u8,
+            R0 as u8,
+            0, // -|
+            0, //  |
+            0, //  |
+            0, //  |=| 64-bit address
+            0, //  |=| to data section
+            0, //  |
+            0, //  |
+            1, // -|
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_mov32_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0,
+            0,
+            0,
+            123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // mov %r0 $123
+            Opcode::Mov32 as u8,
+            R0 as u8,
+            0, // -|
+            0, //  |
+            0, //  |
+            0, //  |=| 64-bit address
+            0, //  |=| to data section
+            0, //  |
+            0, //  |
+            1, // -|
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_mov64_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // mov %r0 $123
+            Opcode::Mov64 as u8,
+            R0 as u8,
+            0, // -|
+            0, //  |
+            0, //  |
+            0, //  |=| 64-bit address
+            0, //  |=| to data section
+            0, //  |
+            0, //  |
+            1, // -|
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_mov_r2r_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R1, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // mov %r1 %r0
+            Opcode::MovR2R as u8,
+            R0 as u8,
+            R1 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123);
+
+        Ok(())
+    }
+
 }
