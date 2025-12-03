@@ -17,6 +17,9 @@ pub enum MvmError {
     #[error("pop on empty (or small) stack")]
     EmptyStackPop,
 
+    #[error("catched division by zero")]
+    DivisionByZero,
+
     #[error("write entry rejected by system")]
     WriteEntryRejected,
 
