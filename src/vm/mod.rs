@@ -42,7 +42,9 @@ pub struct VM {
     pub registers: MemoryBuffer,
 
     pub running: bool,
-    pub exit_code: u8
+    pub exit_code: u8,
+
+    pub stack_size: usize,
 }
 
 impl VM {
@@ -55,11 +57,15 @@ impl VM {
             registers: MemoryBuffer::new(15 * 8),
             running: false,
             exit_code: 1,
+            stack_size,
         };
 
         if stack_size >= memsize {
             return Err(MvmError::OutOfBounds);
         }
+
+        vm.set_register(R_STACK_POINTER, (memsize - stack_size) as u64)?;
+        vm.set_register(R_FRAME_POINTER, (memsize - stack_size) as u64)?;
 
         Ok(vm)
     }
@@ -69,7 +75,7 @@ impl VM {
             return Err(MvmError::WriteEntryRejected);
         }
 
-        if program.len() >= (self.memory.len() - self.get_register(R_STACK_POINTER)? as usize) {
+        if program.len() >= (self.memory.len() - self.stack_size) {
             return Err(MvmError::OutOfBounds);
         }
 
@@ -151,6 +157,124 @@ impl VM {
         self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_add(8));
 
         self.memory.get_u64(instruction_ptr)
+    }
+}
+
+impl VM {
+    // stack
+
+    fn stack_get_u8(&mut self, offset: u16) -> Result<u8, MvmError> {
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        let address = stack_ptr + offset as u64;
+
+        self.memory.get_u8(address)
+    }
+
+    fn stack_get_u16(&mut self, offset: u16) -> Result<u16, MvmError> {
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        let address = stack_ptr + offset as u64;
+
+        self.memory.get_u16(address)
+    }
+
+    fn stack_get_u32(&mut self, offset: u16) -> Result<u32, MvmError> {
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        let address = stack_ptr + offset as u64;
+
+        self.memory.get_u32(address)
+    }
+
+    fn stack_get_u64(&mut self, offset: u16) -> Result<u64, MvmError> {
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        let address = stack_ptr + offset as u64;
+
+        self.memory.get_u64(address)
+    }
+
+    fn stack_set_u8(&mut self, offset: u16, value: u8) -> Result<(), MvmError> {
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        let address = stack_ptr + offset as u64;
+
+        self.memory.set_u8(address, value)
+    }
+
+    fn stack_set_u16(&mut self, offset: u16, value: u16) -> Result<(), MvmError> {
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        let address = stack_ptr + offset as u64;
+
+        self.memory.set_u16(address, value)
+    }
+
+    fn stack_set_u32(&mut self, offset: u16, value: u32) -> Result<(), MvmError> {
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        let address = stack_ptr + offset as u64;
+
+        self.memory.set_u32(address, value)
+    }
+
+    fn stack_set_u64(&mut self, offset: u16, value: u64) -> Result<(), MvmError> {
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        let address = stack_ptr + offset as u64;
+
+        self.memory.set_u64(address, value)
+    }
+
+    // frame
+
+    fn frame_get_u8(&mut self, offset: u16) -> Result<u8, MvmError> {
+        let frame_ptr = self.get_register(R_FRAME_POINTER)?;
+        let address = frame_ptr + offset as u64;
+
+        self.memory.get_u8(address)
+    }
+
+    fn frame_get_u16(&mut self, offset: u16) -> Result<u16, MvmError> {
+        let frame_ptr = self.get_register(R_FRAME_POINTER)?;
+        let address = frame_ptr + offset as u64;
+
+        self.memory.get_u16(address)
+    }
+
+    fn frame_get_u32(&mut self, offset: u16) -> Result<u32, MvmError> {
+        let frame_ptr = self.get_register(R_FRAME_POINTER)?;
+        let address = frame_ptr + offset as u64;
+
+        self.memory.get_u32(address)
+    }
+
+    fn frame_get_u64(&mut self, offset: u16) -> Result<u64, MvmError> {
+        let frame_ptr = self.get_register(R_FRAME_POINTER)?;
+        let address = frame_ptr + offset as u64;
+
+        self.memory.get_u64(address)
+    }
+
+    fn frame_set_u8(&mut self, offset: u16, value: u8) -> Result<(), MvmError> {
+        let frame_ptr = self.get_register(R_FRAME_POINTER)?;
+        let address = frame_ptr + offset as u64;
+
+        self.memory.set_u8(address, value)
+    }
+
+    fn frame_set_u16(&mut self, offset: u16, value: u16) -> Result<(), MvmError> {
+        let frame_ptr = self.get_register(R_FRAME_POINTER)?;
+        let address = frame_ptr + offset as u64;
+
+        self.memory.set_u16(address, value)
+    }
+
+    fn frame_set_u32(&mut self, offset: u16, value: u32) -> Result<(), MvmError> {
+        let frame_ptr = self.get_register(R_FRAME_POINTER)?;
+        let address = frame_ptr + offset as u64;
+
+        self.memory.set_u32(address, value)
+    }
+
+    fn frame_set_u64(&mut self, offset: u16, value: u64) -> Result<(), MvmError> {
+        let frame_ptr = self.get_register(R_FRAME_POINTER)?;
+        let address = frame_ptr + offset as u64;
+
+        self.memory.set_u64(address, value)
     }
 }
 
@@ -351,6 +475,158 @@ mod tests {
         assert_eq!(vm.get_register(R_STACK_POINTER)?, 123);
         assert_eq!(vm.get_register(R_FRAME_POINTER)?, 123);
         assert_eq!(vm.get_register(R_MEMORY_POINTER)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_stack_u8_operations_test() -> Result<(), MvmError> {
+        const OFFSET1: u16 = 0;
+        const OFFSET2: u16 = 1;
+        const OFFSET3: u16 = 2;
+
+        let mut vm = VM::new(128, 16)?;
+
+        vm.stack_set_u8(OFFSET1, 123);
+        vm.stack_set_u8(OFFSET2, 123);
+        vm.stack_set_u8(OFFSET3, 123);
+
+        assert_eq!(vm.stack_get_u8(OFFSET1)?, 123);
+        assert_eq!(vm.stack_get_u8(OFFSET2)?, 123);
+        assert_eq!(vm.stack_get_u8(OFFSET3)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_stack_u16_operations_test() -> Result<(), MvmError> {
+        const OFFSET1: u16 = 0 * 2;
+        const OFFSET2: u16 = 1 * 2;
+        const OFFSET3: u16 = 2 * 2;
+
+        let mut vm = VM::new(128, 16)?;
+
+        vm.stack_set_u16(OFFSET1, 123);
+        vm.stack_set_u16(OFFSET2, 123);
+        vm.stack_set_u16(OFFSET3, 123);
+
+        assert_eq!(vm.stack_get_u16(OFFSET1)?, 123);
+        assert_eq!(vm.stack_get_u16(OFFSET2)?, 123);
+        assert_eq!(vm.stack_get_u16(OFFSET3)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_stack_u32_operations_test() -> Result<(), MvmError> {
+        const OFFSET1: u16 = 0 * 4;
+        const OFFSET2: u16 = 1 * 4;
+        const OFFSET3: u16 = 2 * 4;
+
+        let mut vm = VM::new(128, 16)?;
+
+        vm.stack_set_u32(OFFSET1, 123);
+        vm.stack_set_u32(OFFSET2, 123);
+        vm.stack_set_u32(OFFSET3, 123);
+
+        assert_eq!(vm.stack_get_u32(OFFSET1)?, 123);
+        assert_eq!(vm.stack_get_u32(OFFSET2)?, 123);
+        assert_eq!(vm.stack_get_u32(OFFSET3)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_stack_u64_operations_test() -> Result<(), MvmError> {
+        const OFFSET1: u16 = 0 * 8;
+        const OFFSET2: u16 = 1 * 8;
+        const OFFSET3: u16 = 2 * 8;
+
+        let mut vm = VM::new(128, 32)?;
+
+        vm.stack_set_u64(OFFSET1, 123);
+        vm.stack_set_u64(OFFSET2, 123);
+        vm.stack_set_u64(OFFSET3, 123);
+
+        assert_eq!(vm.stack_get_u64(OFFSET1)?, 123);
+        assert_eq!(vm.stack_get_u64(OFFSET2)?, 123);
+        assert_eq!(vm.stack_get_u64(OFFSET3)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_frame_u8_operations_test() -> Result<(), MvmError> {
+        const OFFSET1: u16 = 0;
+        const OFFSET2: u16 = 1;
+        const OFFSET3: u16 = 2;
+
+        let mut vm = VM::new(128, 16)?;
+
+        vm.frame_set_u8(OFFSET1, 123);
+        vm.frame_set_u8(OFFSET2, 123);
+        vm.frame_set_u8(OFFSET3, 123);
+
+        assert_eq!(vm.frame_get_u8(OFFSET1)?, 123);
+        assert_eq!(vm.frame_get_u8(OFFSET2)?, 123);
+        assert_eq!(vm.frame_get_u8(OFFSET3)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_frame_u16_operations_test() -> Result<(), MvmError> {
+        const OFFSET1: u16 = 0 * 2;
+        const OFFSET2: u16 = 1 * 2;
+        const OFFSET3: u16 = 2 * 2;
+
+        let mut vm = VM::new(128, 16)?;
+
+        vm.frame_set_u16(OFFSET1, 123);
+        vm.frame_set_u16(OFFSET2, 123);
+        vm.frame_set_u16(OFFSET3, 123);
+
+        assert_eq!(vm.frame_get_u16(OFFSET1)?, 123);
+        assert_eq!(vm.frame_get_u16(OFFSET2)?, 123);
+        assert_eq!(vm.frame_get_u16(OFFSET3)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_frame_u32_operations_test() -> Result<(), MvmError> {
+        const OFFSET1: u16 = 0 * 4;
+        const OFFSET2: u16 = 1 * 4;
+        const OFFSET3: u16 = 2 * 4;
+
+        let mut vm = VM::new(128, 16)?;
+
+        vm.frame_set_u32(OFFSET1, 123);
+        vm.frame_set_u32(OFFSET2, 123);
+        vm.frame_set_u32(OFFSET3, 123);
+
+        assert_eq!(vm.frame_get_u32(OFFSET1)?, 123);
+        assert_eq!(vm.frame_get_u32(OFFSET2)?, 123);
+        assert_eq!(vm.frame_get_u32(OFFSET3)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_frame_u64_operations_test() -> Result<(), MvmError> {
+        const OFFSET1: u16 = 0 * 8;
+        const OFFSET2: u16 = 1 * 8;
+        const OFFSET3: u16 = 2 * 8;
+
+        let mut vm = VM::new(128, 32)?;
+
+        vm.frame_set_u64(OFFSET1, 123);
+        vm.frame_set_u64(OFFSET2, 123);
+        vm.frame_set_u64(OFFSET3, 123);
+
+        assert_eq!(vm.frame_get_u64(OFFSET1)?, 123);
+        assert_eq!(vm.frame_get_u64(OFFSET2)?, 123);
+        assert_eq!(vm.frame_get_u64(OFFSET3)?, 123);
 
         Ok(())
     }

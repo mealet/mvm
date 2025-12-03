@@ -591,7 +591,7 @@ mod tests {
             0xff,
             Opcode::TextSection as u8,
             // -- program --
-            // add %r0 $123
+            // xadd %r0 $123
             Opcode::XAdd as u8,
             R0 as u8,
             R1 as u8,
@@ -604,6 +604,32 @@ mod tests {
 
         assert_eq!(vm.get_register(R0)?, 2 + 1);
         assert_eq!(vm.get_register(R1)?, 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_push8_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // push8 %r0
+            Opcode::Push8 as u8,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
 
         Ok(())
     }
