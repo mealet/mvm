@@ -10,6 +10,7 @@ section .data
     [. - hello]
 
 section .text
+entry _start
 
 _start:
   ; -- syscall void write(int output, void *buffer, size_t length) --
