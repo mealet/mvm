@@ -360,73 +360,57 @@ impl VM {
     // frame
 
     fn frame_get_u8(&mut self, offset: u16) -> Result<u8, MvmError> {
-        const BYTES_LENGTH: u64 = 1;
-
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64;
 
         self.memory.get_u8(address)
     }
 
     fn frame_get_u16(&mut self, offset: u16) -> Result<u16, MvmError> {
-        const BYTES_LENGTH: u64 = 2;
-
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64;
 
         self.memory.get_u16(address)
     }
 
     fn frame_get_u32(&mut self, offset: u16) -> Result<u32, MvmError> {
-        const BYTES_LENGTH: u64 = 4;
-
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64;
 
         self.memory.get_u32(address)
     }
 
     fn frame_get_u64(&mut self, offset: u16) -> Result<u64, MvmError> {
-        const BYTES_LENGTH: u64 = 8;
-
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64;
 
         self.memory.get_u64(address)
     }
 
     fn frame_set_u8(&mut self, offset: u16, value: u8) -> Result<(), MvmError> {
-        const BYTES_LENGTH: u64 = 1;
-
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64;
 
         self.memory.set_u8(address, value)
     }
 
     fn frame_set_u16(&mut self, offset: u16, value: u16) -> Result<(), MvmError> {
-        const BYTES_LENGTH: u64 = 2;
-
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64;
 
         self.memory.set_u16(address, value)
     }
 
     fn frame_set_u32(&mut self, offset: u16, value: u32) -> Result<(), MvmError> {
-        const BYTES_LENGTH: u64 = 4;
-
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64;
 
         self.memory.set_u32(address, value)
     }
 
     fn frame_set_u64(&mut self, offset: u16, value: u64) -> Result<(), MvmError> {
-        const BYTES_LENGTH: u64 = 8;
-
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64;
 
         self.memory.set_u64(address, value)
     }
