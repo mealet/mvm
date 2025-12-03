@@ -95,10 +95,30 @@ impl VM {
                 self.stack_push_u32(value as u32)?;
             },
 
-            Opcode::Pop8 => todo!(),
-            Opcode::Pop16 => todo!(),
-            Opcode::Pop32 => todo!(),
-            Opcode::Pop64 => todo!(),
+            Opcode::Pop8 => {
+                let dest = self.fetch_u8()?;
+                let value = self.stack_pop_u8()?;
+
+                self.set_register(dest as u64, value as u64)?;
+            },
+            Opcode::Pop16 => {
+                let dest = self.fetch_u8()?;
+                let value = self.stack_pop_u16()?;
+
+                self.set_register(dest as u64, value as u64)?;
+            },
+            Opcode::Pop32 => {
+                let dest = self.fetch_u8()?;
+                let value = self.stack_pop_u32()?;
+
+                self.set_register(dest as u64, value as u64)?;
+            },
+            Opcode::Pop64 => {
+                let dest = self.fetch_u8()?;
+                let value = self.stack_pop_u64()?;
+
+                self.set_register(dest as u64, value)?;
+            },
 
             Opcode::Frame8 => todo!(),
             Opcode::Frame16 => todo!(),
@@ -736,6 +756,126 @@ mod tests {
         vm.run()?;
 
         assert_eq!(vm.stack_get_u64(0)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_pop8_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.stack_push_u8(123)?;
+
+        dbg!(&vm.memory.inner);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // pop8 %r0
+            Opcode::Pop8 as u8,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_pop16_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.stack_push_u16(123)?;
+
+        dbg!(&vm.memory.inner);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // pop16 %r0
+            Opcode::Pop16 as u8,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_pop32_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.stack_push_u32(123)?;
+
+        dbg!(&vm.memory.inner);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // pop32 %r0
+            Opcode::Pop32 as u8,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_pop64_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.stack_push_u64(123)?;
+
+        dbg!(&vm.memory.inner);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // pop64 %r0
+            Opcode::Pop64 as u8,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 123);
 
         Ok(())
     }
