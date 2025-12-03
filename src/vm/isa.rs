@@ -22,6 +22,8 @@ pub enum Opcode {
     Mov64 = 0x06,        // mov %dest, $u64
     MovR2R = 0x07,       // mov %dest, %src
 
+    // push instruction appends value from register to stack and places
+    // offset (related to frame pointer) to %src.
     Push8 = 0x30,         // push8 %src
     Push16 = 0x31,        // push16 %src
     Push32 = 0x32,        // push32 %src

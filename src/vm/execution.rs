@@ -74,25 +74,49 @@ impl VM {
                 let src = self.fetch_u8()?;
                 let value = self.get_register(src as u64)?;
 
+                let stack_ptr = self.get_register(R_STACK_POINTER)?;
+                let frame_ptr= self.get_register(R_FRAME_POINTER)?;
+
+                let offset = stack_ptr - frame_ptr;
+
                 self.stack_push_u8(value as u8)?;
+                self.set_register(src as u64, offset)?;
             },
             Opcode::Push16 => {
                 let src = self.fetch_u8()?;
                 let value = self.get_register(src as u64)?;
 
+                let stack_ptr = self.get_register(R_STACK_POINTER)?;
+                let frame_ptr= self.get_register(R_FRAME_POINTER)?;
+
+                let offset = stack_ptr - frame_ptr;
+
                 self.stack_push_u16(value as u16)?;
+                self.set_register(src as u64, offset)?;
             },
             Opcode::Push32 => {
                 let src = self.fetch_u8()?;
                 let value = self.get_register(src as u64)?;
 
+                let stack_ptr = self.get_register(R_STACK_POINTER)?;
+                let frame_ptr= self.get_register(R_FRAME_POINTER)?;
+
+                let offset = stack_ptr - frame_ptr;
+
                 self.stack_push_u32(value as u32)?;
+                self.set_register(src as u64, offset)?;
             },
             Opcode::Push64 => {
                 let src = self.fetch_u8()?;
                 let value = self.get_register(src as u64)?;
 
+                let stack_ptr = self.get_register(R_STACK_POINTER)?;
+                let frame_ptr= self.get_register(R_FRAME_POINTER)?;
+
+                let offset = stack_ptr - frame_ptr;
+
                 self.stack_push_u32(value as u32)?;
+                self.set_register(src as u64, offset)?;
             },
 
             Opcode::Pop8 => {
@@ -736,6 +760,7 @@ mod tests {
         vm.run()?;
 
         assert_eq!(vm.stack_get_u8(0)?, 123);
+        assert_eq!(vm.get_register(R0)?, 0);
 
         Ok(())
     }
@@ -764,6 +789,7 @@ mod tests {
         vm.run()?;
 
         assert_eq!(vm.stack_get_u16(0)?, 123);
+        assert_eq!(vm.get_register(R0)?, 0);
 
         Ok(())
     }
@@ -792,6 +818,7 @@ mod tests {
         vm.run()?;
 
         assert_eq!(vm.stack_get_u32(0)?, 123);
+        assert_eq!(vm.get_register(R0)?, 0);
 
         Ok(())
     }
@@ -820,6 +847,7 @@ mod tests {
         vm.run()?;
 
         assert_eq!(vm.stack_get_u64(0)?, 123);
+        assert_eq!(vm.get_register(R0)?, 0);
 
         Ok(())
     }
