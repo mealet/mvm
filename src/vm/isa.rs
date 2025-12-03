@@ -44,6 +44,8 @@ pub enum Opcode {
     Peek32 = 0x3e,         // peek32 %dest, $u16
     Peek64 = 0x3f,         // peek64 %dest, $u16
     
+    // TODO: Add stack & frame editing instructions
+    
     // ---| Arithmetics |---
 
     Add8 = 0x08,         // add %dest, $u8
