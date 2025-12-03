@@ -298,7 +298,7 @@ impl VM {
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
 
-        if (stack_ptr - BYTES_LENGTH) <= (self.memory.len() - self.stack_size) as u64 {
+        if (stack_ptr - BYTES_LENGTH) < (self.memory.len() - self.stack_size) as u64 {
             return Err(MvmError::EmptyStackPop);
         }
 
@@ -313,7 +313,7 @@ impl VM {
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
 
-        if (stack_ptr - BYTES_LENGTH) <= (self.memory.len() - self.stack_size) as u64 {
+        if (stack_ptr - BYTES_LENGTH) < (self.memory.len() - self.stack_size) as u64 {
             return Err(MvmError::EmptyStackPop);
         }
 
@@ -328,7 +328,7 @@ impl VM {
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
 
-        if (stack_ptr - BYTES_LENGTH) <= (self.memory.len() - self.stack_size) as u64 {
+        if (stack_ptr - BYTES_LENGTH) < (self.memory.len() - self.stack_size) as u64 {
             return Err(MvmError::EmptyStackPop);
         }
 
@@ -343,7 +343,7 @@ impl VM {
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
 
-        if (stack_ptr - BYTES_LENGTH) <= (self.memory.len() - self.stack_size) as u64 {
+        if (stack_ptr - BYTES_LENGTH) < (self.memory.len() - self.stack_size) as u64 {
             return Err(MvmError::EmptyStackPop);
         }
 
