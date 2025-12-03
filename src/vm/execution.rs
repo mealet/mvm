@@ -157,10 +157,42 @@ impl VM {
                 self.set_register(dest as u64, value as u64);
             },
             
-            Opcode::Peek8 => todo!(),
-            Opcode::Peek16 => todo!(),
-            Opcode::Peek32 => todo!(),
-            Opcode::Peek64 => todo!(),
+            Opcode::Peek8 => {
+                let dest = self.fetch_u8()?;
+                let address = self.fetch_u64()?;
+
+                let offset = self.memory.get_u16(address)?;
+                let value = self.stack_get_u8(offset)?;
+
+                self.set_register(dest as u64, value as u64);
+            },
+            Opcode::Peek16 => {
+                let dest = self.fetch_u8()?;
+                let address = self.fetch_u64()?;
+
+                let offset = self.memory.get_u16(address)?;
+                let value = self.stack_get_u16(offset)?;
+
+                self.set_register(dest as u64, value as u64);
+            },
+            Opcode::Peek32 => {
+                let dest = self.fetch_u8()?;
+                let address = self.fetch_u64()?;
+
+                let offset = self.memory.get_u16(address)?;
+                let value = self.stack_get_u32(offset)?;
+
+                self.set_register(dest as u64, value as u64);
+            },
+            Opcode::Peek64 => {
+                let dest = self.fetch_u8()?;
+                let address = self.fetch_u64()?;
+
+                let offset = self.memory.get_u16(address)?;
+                let value = self.stack_get_u64(offset)?;
+
+                self.set_register(dest as u64, value as u64);
+            },
 
             Opcode::Add8 => {
                 let destination = self.fetch_u8()?;
@@ -909,11 +941,12 @@ mod tests {
         let mut vm = VM::new(64, 16)?;
 
         vm.stack_push_u8(123)?;
+        vm.stack_push_u8(255)?;
 
         let program = [
             Opcode::DataSection as u8,
             // -- data section --
-            0, 0,
+            0, 1,
             // -- data section end --
             0xff,
             Opcode::TextSection as u8,
@@ -929,7 +962,7 @@ mod tests {
         vm.insert_program(&program)?;
         vm.run()?;
 
-        assert_eq!(vm.get_register(R0)?, 123);
+        assert_eq!(vm.get_register(R0)?, 255);
 
         Ok(())
     }
@@ -938,12 +971,13 @@ mod tests {
     fn instruction_frame16_test() -> Result<(), MvmError> {
         let mut vm = VM::new(64, 16)?;
 
-        vm.stack_push_u16(123)?;
+        vm.stack_push_u8(123)?;
+        vm.stack_push_u16(255)?;
 
         let program = [
             Opcode::DataSection as u8,
             // -- data section --
-            0, 0,
+            0, 1,
             // -- data section end --
             0xff,
             Opcode::TextSection as u8,
@@ -959,7 +993,7 @@ mod tests {
         vm.insert_program(&program)?;
         vm.run()?;
 
-        assert_eq!(vm.get_register(R0)?, 123);
+        assert_eq!(vm.get_register(R0)?, 255);
 
         Ok(())
     }
@@ -968,12 +1002,13 @@ mod tests {
     fn instruction_frame32_test() -> Result<(), MvmError> {
         let mut vm = VM::new(64, 16)?;
 
-        vm.stack_push_u32(123)?;
+        vm.stack_push_u8(123)?;
+        vm.stack_push_u32(255)?;
 
         let program = [
             Opcode::DataSection as u8,
             // -- data section --
-            0, 0,
+            0, 1,
             // -- data section end --
             0xff,
             Opcode::TextSection as u8,
@@ -989,7 +1024,7 @@ mod tests {
         vm.insert_program(&program)?;
         vm.run()?;
 
-        assert_eq!(vm.get_register(R0)?, 123);
+        assert_eq!(vm.get_register(R0)?, 255);
 
         Ok(())
     }
@@ -998,12 +1033,13 @@ mod tests {
     fn instruction_frame64_test() -> Result<(), MvmError> {
         let mut vm = VM::new(64, 16)?;
 
-        vm.stack_push_u64(123)?;
+        vm.stack_push_u8(123)?;
+        vm.stack_push_u64(255)?;
 
         let program = [
             Opcode::DataSection as u8,
             // -- data section --
-            0, 0,
+            0, 1,
             // -- data section end --
             0xff,
             Opcode::TextSection as u8,
@@ -1019,7 +1055,131 @@ mod tests {
         vm.insert_program(&program)?;
         vm.run()?;
 
-        assert_eq!(vm.get_register(R0)?, 123);
+        assert_eq!(vm.get_register(R0)?, 255);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_peek8_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.stack_push_u8(123)?;
+        vm.stack_push_u8(255)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // peek8 %r0 $0
+            Opcode::Peek8 as u8,
+            R0 as u8,
+            0, 0, 0, 0, 0, 0, 0, 1, // 64-bit address to data section
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 255);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_peek16_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.stack_push_u8(123)?;
+        vm.stack_push_u16(255)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // peek16 %r0 $0
+            Opcode::Peek16 as u8,
+            R0 as u8,
+            0, 0, 0, 0, 0, 0, 0, 1, // 64-bit address to data section
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 255);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_peek32_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.stack_push_u8(123)?;
+        vm.stack_push_u32(255)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // peek32 %r0 $0
+            Opcode::Peek32 as u8,
+            R0 as u8,
+            0, 0, 0, 0, 0, 0, 0, 1, // 64-bit address to data section
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 255);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_peek64_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.stack_push_u8(123)?;
+        vm.stack_push_u64(255)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // peek64 %r0 $0
+            Opcode::Peek64 as u8,
+            R0 as u8,
+            0, 0, 0, 0, 0, 0, 0, 1, // 64-bit address to data section
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 255);
 
         Ok(())
     }
