@@ -70,6 +70,26 @@ impl VM {
                 self.set_register(destination as u64, value as u64)?;
             },
 
+            Opcode::Push8 => todo!(),
+            Opcode::Push16 => todo!(),
+            Opcode::Push32 => todo!(),
+            Opcode::Push64 => todo!(),
+
+            Opcode::Pop8 => todo!(),
+            Opcode::Pop16 => todo!(),
+            Opcode::Pop32 => todo!(),
+            Opcode::Pop64 => todo!(),
+
+            Opcode::Frame8 => todo!(),
+            Opcode::Frame16 => todo!(),
+            Opcode::Frame32 => todo!(),
+            Opcode::Frame64 => todo!(),
+            
+            Opcode::Peek8 => todo!(),
+            Opcode::Peek16 => todo!(),
+            Opcode::Peek32 => todo!(),
+            Opcode::Peek64 => todo!(),
+
             Opcode::Add8 => {
                 let destination = self.fetch_u8()?;
                 let address = self.fetch_u64()?;

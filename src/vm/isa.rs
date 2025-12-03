@@ -21,6 +21,28 @@ pub enum Opcode {
     Mov32 = 0x05,        // mov %dest, $u32
     Mov64 = 0x06,        // mov %dest, $u64
     MovR2R = 0x07,       // mov %dest, %src
+
+    Push8 = 0x30,         // push8 %src
+    Push16 = 0x31,        // push16 %src
+    Push32 = 0x32,        // push32 %src
+    Push64 = 0x33,        // push64 %src
+
+    Pop8 = 0x34,          // pop8 %dest
+    Pop16 = 0x35,         // pop16 %dest
+    Pop32 = 0x36,         // pop32 %dest
+    Pop64 = 0x37,         // pop64 %dest
+
+    // frame instruction copies value from [stack frame + offset] to destination register
+    Frame8 = 0x38,         // frame8 %dest, $u16
+    Frame16 = 0x39,        // frame16 %dest, $u16
+    Frame32 = 0x3a,        // frame32 %dest, $u16
+    Frame64 = 0x3b,        // frame64 %dest, $u16
+    
+    // peek instruction copies value from [current stack value - offset] to destination register
+    Peek8 = 0x3c,          // peek8 %dest, $u16
+    Peek16 = 0x3d,         // peek16 %dest, $u16
+    Peek32 = 0x3e,         // peek32 %dest, $u16
+    Peek64 = 0x3f,         // peek64 %dest, $u16
     
     // ---| Arithmetics |---
 
