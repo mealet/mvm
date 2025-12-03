@@ -64,8 +64,12 @@ impl VM {
             return Err(MvmError::OutOfBounds);
         }
 
-        vm.set_register(R_STACK_POINTER, (memsize - stack_size) as u64)?;
-        vm.set_register(R_FRAME_POINTER, (memsize - stack_size) as u64)?;
+        let stack_ptr = (memsize - stack_size) as u64;
+
+        vm.set_register(R_STACK_POINTER, stack_ptr)?;
+        vm.set_register(R_FRAME_POINTER, stack_ptr)?;
+
+        vm.memory.set_u8(stack_ptr, 0xff)?;
 
         Ok(vm)
     }
@@ -359,8 +363,7 @@ impl VM {
         const BYTES_LENGTH: u64 = 1;
 
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
-
+        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
 
         self.memory.get_u8(address)
     }
@@ -369,7 +372,7 @@ impl VM {
         const BYTES_LENGTH: u64 = 2;
 
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
 
         self.memory.get_u16(address)
     }
@@ -378,7 +381,7 @@ impl VM {
         const BYTES_LENGTH: u64 = 4;
 
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
 
         self.memory.get_u32(address)
     }
@@ -387,7 +390,7 @@ impl VM {
         const BYTES_LENGTH: u64 = 8;
 
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
 
         self.memory.get_u64(address)
     }
@@ -396,7 +399,7 @@ impl VM {
         const BYTES_LENGTH: u64 = 1;
 
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
 
         self.memory.set_u8(address, value)
     }
@@ -405,7 +408,7 @@ impl VM {
         const BYTES_LENGTH: u64 = 2;
 
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
 
         self.memory.set_u16(address, value)
     }
@@ -414,7 +417,7 @@ impl VM {
         const BYTES_LENGTH: u64 = 4;
 
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
 
         self.memory.set_u32(address, value)
     }
@@ -423,7 +426,7 @@ impl VM {
         const BYTES_LENGTH: u64 = 8;
 
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
+        let address = frame_ptr + offset as u64 - BYTES_LENGTH;
 
         self.memory.set_u64(address, value)
     }
