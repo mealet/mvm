@@ -2,8 +2,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum MvmError {
-    #[error("invalid opcode provided")]
-    InvalidOpcode,
+    #[error("invalid opcode provided (value: {0})")]
+    InvalidOpcode(u8),
 
     #[error("segmentation fault (address: {0})")]
     SegmentationFault(u64),

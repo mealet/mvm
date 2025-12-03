@@ -110,6 +110,26 @@ impl TryFrom<u8> for Opcode {
             0x06 => Ok(Opcode::Mov64),
             0x07 => Ok(Opcode::MovR2R),
 
+            0x30 => Ok(Opcode::Push8),
+            0x31 => Ok(Opcode::Push16),
+            0x32 => Ok(Opcode::Push32),
+            0x33 => Ok(Opcode::Push64),
+
+            0x34 => Ok(Opcode::Pop8),
+            0x35 => Ok(Opcode::Pop16),
+            0x36 => Ok(Opcode::Pop32),
+            0x37 => Ok(Opcode::Pop64),
+
+            0x38 => Ok(Opcode::Frame8),
+            0x39 => Ok(Opcode::Frame16),
+            0x3a => Ok(Opcode::Frame32),
+            0x3b => Ok(Opcode::Frame64),
+
+            0x3c => Ok(Opcode::Peek8),
+            0x3d => Ok(Opcode::Peek16),
+            0x3e => Ok(Opcode::Peek32),
+            0x3f => Ok(Opcode::Peek64),
+
             0x08 => Ok(Opcode::Add8),
             0x09 => Ok(Opcode::Add16),
             0x0a => Ok(Opcode::Add32),
@@ -147,7 +167,7 @@ impl TryFrom<u8> for Opcode {
             0x21 => Ok(Opcode::Je),
             0x22 => Ok(Opcode::Jne),
 
-            _ => Err(MvmError::InvalidOpcode),
+            _ => Err(MvmError::InvalidOpcode(value)),
         };
     }
 }
