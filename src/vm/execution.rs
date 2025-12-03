@@ -72,10 +72,28 @@ impl VM {
 
             Opcode::Push8 => {
                 let src = self.fetch_u8()?;
+                let value = self.get_register(src as u64)?;
+
+                self.stack_push_u8(value as u8)?;
             },
-            Opcode::Push16 => todo!(),
-            Opcode::Push32 => todo!(),
-            Opcode::Push64 => todo!(),
+            Opcode::Push16 => {
+                let src = self.fetch_u8()?;
+                let value = self.get_register(src as u64)?;
+
+                self.stack_push_u16(value as u16)?;
+            },
+            Opcode::Push32 => {
+                let src = self.fetch_u8()?;
+                let value = self.get_register(src as u64)?;
+
+                self.stack_push_u32(value as u32)?;
+            },
+            Opcode::Push64 => {
+                let src = self.fetch_u8()?;
+                let value = self.get_register(src as u64)?;
+
+                self.stack_push_u32(value as u32)?;
+            },
 
             Opcode::Pop8 => todo!(),
             Opcode::Pop16 => todo!(),
