@@ -7,7 +7,7 @@ section .data
     ascii "Hello, World!"
 
   len:
-    [. - &hello]
+    [. - hello]
 
 section .text
 
@@ -16,13 +16,13 @@ _start:
 
   mov %r0, $0 ; int output (stdout)
 
-  mov %r1, &hello ; void* buffer (ptr to message)
+  mov %r1, hello ; void* buffer (ptr to message)
   mov %r2, len ; size_t length (length variable)
 
   mov %call, $2 ; `write` syscall
   int $syscall ; system call interrupt
 
-  jmp &exit
+  jmp exit
 
 exit:
   ; -- syscall void exit(int status) --
