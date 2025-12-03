@@ -11,6 +11,12 @@ pub enum MvmError {
     #[error("memory is out of bounds")]
     OutOfBounds,
 
+    #[error("stack data overflow")]
+    StackOverflow,
+
+    #[error("pop on empty (or small) stack")]
+    EmptyStackPop,
+
     #[error("write entry rejected by system")]
     WriteEntryRejected,
 

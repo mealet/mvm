@@ -70,7 +70,9 @@ impl VM {
                 self.set_register(destination as u64, value as u64)?;
             },
 
-            Opcode::Push8 => todo!(),
+            Opcode::Push8 => {
+                let src = self.fetch_u8()?;
+            },
             Opcode::Push16 => todo!(),
             Opcode::Push32 => todo!(),
             Opcode::Push64 => todo!(),
@@ -630,6 +632,92 @@ mod tests {
 
         vm.insert_program(&program)?;
         vm.run()?;
+
+        assert_eq!(vm.stack_get_u8(0)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_push16_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // push16 %r0
+            Opcode::Push16 as u8,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.stack_get_u16(0)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_push32_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // push32 %r0
+            Opcode::Push32 as u8,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.stack_get_u32(0)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_push64_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // push64 %r0
+            Opcode::Push64 as u8,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.stack_get_u64(0)?, 123);
 
         Ok(())
     }

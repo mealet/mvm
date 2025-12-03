@@ -164,115 +164,266 @@ impl VM {
     // stack
 
     fn stack_get_u8(&mut self, offset: u16) -> Result<u8, MvmError> {
+        const BYTES_LENGTH: u64 = 1;
+
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
-        let address = stack_ptr + offset as u64;
+        let address = stack_ptr - offset as u64 - BYTES_LENGTH;
 
         self.memory.get_u8(address)
     }
 
     fn stack_get_u16(&mut self, offset: u16) -> Result<u16, MvmError> {
+        const BYTES_LENGTH: u64 = 2;
+
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
-        let address = stack_ptr + offset as u64;
+        let address = stack_ptr - offset as u64 - BYTES_LENGTH;
+
 
         self.memory.get_u16(address)
     }
 
     fn stack_get_u32(&mut self, offset: u16) -> Result<u32, MvmError> {
+        const BYTES_LENGTH: u64 = 4;
+
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
-        let address = stack_ptr + offset as u64;
+        let address = stack_ptr - offset as u64 - BYTES_LENGTH;
+
 
         self.memory.get_u32(address)
     }
 
     fn stack_get_u64(&mut self, offset: u16) -> Result<u64, MvmError> {
+        const BYTES_LENGTH: u64 = 8;
+
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
-        let address = stack_ptr + offset as u64;
+        let address = stack_ptr - offset as u64 - BYTES_LENGTH;
+
 
         self.memory.get_u64(address)
     }
 
     fn stack_set_u8(&mut self, offset: u16, value: u8) -> Result<(), MvmError> {
+        const BYTES_LENGTH: u64 = 1;
+
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
-        let address = stack_ptr + offset as u64;
+        let address = stack_ptr - offset as u64 - BYTES_LENGTH;
+
 
         self.memory.set_u8(address, value)
     }
 
     fn stack_set_u16(&mut self, offset: u16, value: u16) -> Result<(), MvmError> {
+        const BYTES_LENGTH: u64 = 2;
+
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
-        let address = stack_ptr + offset as u64;
+        let address = stack_ptr - offset as u64 - BYTES_LENGTH;
+
 
         self.memory.set_u16(address, value)
     }
 
     fn stack_set_u32(&mut self, offset: u16, value: u32) -> Result<(), MvmError> {
+        const BYTES_LENGTH: u64 = 4;
+
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
-        let address = stack_ptr + offset as u64;
+        let address = stack_ptr - offset as u64 - BYTES_LENGTH;
 
         self.memory.set_u32(address, value)
     }
 
     fn stack_set_u64(&mut self, offset: u16, value: u64) -> Result<(), MvmError> {
+        const BYTES_LENGTH: u64 = 8;
+
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
-        let address = stack_ptr + offset as u64;
+        let address = stack_ptr - offset as u64 - BYTES_LENGTH;
+
 
         self.memory.set_u64(address, value)
+    }
+
+    fn stack_push_u8(&mut self, value: u8) -> Result<(), MvmError> {
+        const BYTES_LENGTH: u64 = 1;
+
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+
+        if (stack_ptr + BYTES_LENGTH - 1) as usize >= self.memory.len() {
+            return Err(MvmError::StackOverflow);
+        }
+
+        self.set_register(R_STACK_POINTER, stack_ptr + BYTES_LENGTH);
+        self.memory.set_u8(stack_ptr, value)
+    }
+
+    fn stack_push_u16(&mut self, value: u16) -> Result<(), MvmError> {
+        const BYTES_LENGTH: u64 = 2;
+
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+
+        if (stack_ptr + BYTES_LENGTH - 1) as usize >= self.memory.len() {
+            return Err(MvmError::StackOverflow);
+        }
+
+        self.set_register(R_STACK_POINTER, stack_ptr + BYTES_LENGTH);
+        self.memory.set_u16(stack_ptr, value)
+    }
+
+    fn stack_push_u32(&mut self, value: u32) -> Result<(), MvmError> {
+        const BYTES_LENGTH: u64 = 4;
+
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+
+        if (stack_ptr + BYTES_LENGTH - 1) as usize >= self.memory.len() {
+            return Err(MvmError::StackOverflow);
+        }
+
+        self.set_register(R_STACK_POINTER, stack_ptr + BYTES_LENGTH);
+        self.memory.set_u32(stack_ptr, value)
+    }
+
+    fn stack_push_u64(&mut self, value: u64) -> Result<(), MvmError> {
+        const BYTES_LENGTH: u64 = 8;
+
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+
+        if (stack_ptr + BYTES_LENGTH - 1) as usize >= self.memory.len() {
+            return Err(MvmError::StackOverflow);
+        }
+
+        self.set_register(R_STACK_POINTER, stack_ptr + BYTES_LENGTH);
+        self.memory.set_u64(stack_ptr, value)
+    }
+
+    fn stack_pop_u8(&mut self) -> Result<u8, MvmError> {
+        const BYTES_LENGTH: u64 = 1;
+
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+
+        if (stack_ptr - BYTES_LENGTH) <= (self.memory.len() - self.stack_size) as u64 {
+            return Err(MvmError::EmptyStackPop);
+        }
+
+        let value = self.memory.get_u8(stack_ptr - BYTES_LENGTH)?;
+        self.set_register(R_STACK_POINTER, (stack_ptr - BYTES_LENGTH))?;
+
+        Ok(value)
+    }
+
+    fn stack_pop_u16(&mut self) -> Result<u16, MvmError> {
+        const BYTES_LENGTH: u64 = 2;
+
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+
+        if (stack_ptr - BYTES_LENGTH) <= (self.memory.len() - self.stack_size) as u64 {
+            return Err(MvmError::EmptyStackPop);
+        }
+
+        let value = self.memory.get_u16(stack_ptr - BYTES_LENGTH)?;
+        self.set_register(R_STACK_POINTER, (stack_ptr - BYTES_LENGTH))?;
+
+        Ok(value)
+    }
+
+    fn stack_pop_u32(&mut self) -> Result<u32, MvmError> {
+        const BYTES_LENGTH: u64 = 4;
+
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+
+        if (stack_ptr - BYTES_LENGTH) <= (self.memory.len() - self.stack_size) as u64 {
+            return Err(MvmError::EmptyStackPop);
+        }
+
+        let value = self.memory.get_u32(stack_ptr - BYTES_LENGTH)?;
+        self.set_register(R_STACK_POINTER, (stack_ptr - BYTES_LENGTH))?;
+
+        Ok(value)
+    }
+
+    fn stack_pop_u64(&mut self) -> Result<u64, MvmError> {
+        const BYTES_LENGTH: u64 = 8;
+
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+
+        if (stack_ptr - BYTES_LENGTH) <= (self.memory.len() - self.stack_size) as u64 {
+            return Err(MvmError::EmptyStackPop);
+        }
+
+        let value = self.memory.get_u64(stack_ptr - BYTES_LENGTH)?;
+        self.set_register(R_STACK_POINTER, (stack_ptr - BYTES_LENGTH))?;
+
+        Ok(value)
     }
 
     // frame
 
     fn frame_get_u8(&mut self, offset: u16) -> Result<u8, MvmError> {
+        const BYTES_LENGTH: u64 = 1;
+
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64;
+        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
+
 
         self.memory.get_u8(address)
     }
 
     fn frame_get_u16(&mut self, offset: u16) -> Result<u16, MvmError> {
+        const BYTES_LENGTH: u64 = 2;
+
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64;
+        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
 
         self.memory.get_u16(address)
     }
 
     fn frame_get_u32(&mut self, offset: u16) -> Result<u32, MvmError> {
+        const BYTES_LENGTH: u64 = 4;
+
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64;
+        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
 
         self.memory.get_u32(address)
     }
 
     fn frame_get_u64(&mut self, offset: u16) -> Result<u64, MvmError> {
+        const BYTES_LENGTH: u64 = 8;
+
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64;
+        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
 
         self.memory.get_u64(address)
     }
 
     fn frame_set_u8(&mut self, offset: u16, value: u8) -> Result<(), MvmError> {
+        const BYTES_LENGTH: u64 = 1;
+
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64;
+        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
 
         self.memory.set_u8(address, value)
     }
 
     fn frame_set_u16(&mut self, offset: u16, value: u16) -> Result<(), MvmError> {
+        const BYTES_LENGTH: u64 = 2;
+
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64;
+        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
 
         self.memory.set_u16(address, value)
     }
 
     fn frame_set_u32(&mut self, offset: u16, value: u32) -> Result<(), MvmError> {
+        const BYTES_LENGTH: u64 = 4;
+
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64;
+        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
 
         self.memory.set_u32(address, value)
     }
 
     fn frame_set_u64(&mut self, offset: u16, value: u64) -> Result<(), MvmError> {
+        const BYTES_LENGTH: u64 = 8;
+
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
-        let address = frame_ptr + offset as u64;
+        let address = frame_ptr - offset as u64 - BYTES_LENGTH;
 
         self.memory.set_u64(address, value)
     }
@@ -485,7 +636,15 @@ mod tests {
         const OFFSET2: u16 = 1;
         const OFFSET3: u16 = 2;
 
-        let mut vm = VM::new(128, 16)?;
+        let mut vm = VM::new(128, 3)?;
+
+        vm.stack_push_u8(5)?;
+        vm.stack_push_u8(5)?;
+        vm.stack_push_u8(5)?;
+
+        assert_eq!(vm.stack_get_u8(OFFSET1)?, 5);
+        assert_eq!(vm.stack_get_u8(OFFSET2)?, 5);
+        assert_eq!(vm.stack_get_u8(OFFSET3)?, 5);
 
         vm.stack_set_u8(OFFSET1, 123);
         vm.stack_set_u8(OFFSET2, 123);
@@ -506,6 +665,14 @@ mod tests {
 
         let mut vm = VM::new(128, 16)?;
 
+        vm.stack_push_u16(5)?;
+        vm.stack_push_u16(5)?;
+        vm.stack_push_u16(5)?;
+
+        assert_eq!(vm.stack_get_u16(OFFSET1)?, 5);
+        assert_eq!(vm.stack_get_u16(OFFSET2)?, 5);
+        assert_eq!(vm.stack_get_u16(OFFSET3)?, 5);
+
         vm.stack_set_u16(OFFSET1, 123);
         vm.stack_set_u16(OFFSET2, 123);
         vm.stack_set_u16(OFFSET3, 123);
@@ -525,6 +692,14 @@ mod tests {
 
         let mut vm = VM::new(128, 16)?;
 
+        vm.stack_push_u32(5)?;
+        vm.stack_push_u32(5)?;
+        vm.stack_push_u32(5)?;
+
+        assert_eq!(vm.stack_get_u32(OFFSET1)?, 5);
+        assert_eq!(vm.stack_get_u32(OFFSET2)?, 5);
+        assert_eq!(vm.stack_get_u32(OFFSET3)?, 5);
+
         vm.stack_set_u32(OFFSET1, 123);
         vm.stack_set_u32(OFFSET2, 123);
         vm.stack_set_u32(OFFSET3, 123);
@@ -543,6 +718,14 @@ mod tests {
         const OFFSET3: u16 = 2 * 8;
 
         let mut vm = VM::new(128, 32)?;
+
+        vm.stack_push_u64(5)?;
+        vm.stack_push_u64(5)?;
+        vm.stack_push_u64(5)?;
+
+        assert_eq!(vm.stack_get_u64(OFFSET1)?, 5);
+        assert_eq!(vm.stack_get_u64(OFFSET2)?, 5);
+        assert_eq!(vm.stack_get_u64(OFFSET3)?, 5);
 
         vm.stack_set_u64(OFFSET1, 123);
         vm.stack_set_u64(OFFSET2, 123);
