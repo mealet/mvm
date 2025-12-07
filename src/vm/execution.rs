@@ -504,11 +504,48 @@ impl VM {
                 self.set_register(R_ACCUMULATOR, cmp_result)?;
             },
 
-            Opcode::Jmp => todo!(),
-            Opcode::Jz => todo!(),
-            Opcode::Jnz => todo!(),
-            Opcode::Je => todo!(),
-            Opcode::Jne => todo!(),
+            Opcode::Jmp => {
+                let addr = self.fetch_u64()?;
+                self.set_register(R_INSTRUCTION_POINTER, addr)?;
+            },
+            Opcode::Jz => {
+                let addr = self.fetch_u64()?;
+                let acc_value = self.get_register(R_ACCUMULATOR)?;
+
+                if acc_value == 0 {
+                    self.set_register(R_INSTRUCTION_POINTER, addr)?;
+                }
+            },
+            Opcode::Jnz => {
+                let addr = self.fetch_u64()?;
+                let acc_value = self.get_register(R_ACCUMULATOR)?;
+
+                if acc_value != 0 {
+                    self.set_register(R_INSTRUCTION_POINTER, addr)?;
+                }
+            },
+            Opcode::Je => {
+                let val_addr = self.fetch_u64()?;
+                let label_addr = self.fetch_u64()?;
+
+                let data_value = self.memory.get_u64(val_addr)?;
+                let acc_value = self.get_register(R_ACCUMULATOR)?;
+
+                if acc_value == data_value {
+                    self.set_register(R_INSTRUCTION_POINTER, label_addr)?;
+                }
+            },
+            Opcode::Jne => {
+                let val_addr = self.fetch_u64()?;
+                let label_addr = self.fetch_u64()?;
+
+                let data_value = self.memory.get_u64(val_addr)?;
+                let acc_value = self.get_register(R_ACCUMULATOR)?;
+
+                if acc_value != data_value {
+                    self.set_register(R_INSTRUCTION_POINTER, label_addr)?;
+                }
+            },
         }
 
         Ok(())
@@ -2194,6 +2231,199 @@ mod tests {
         vm.run()?;
 
         assert_eq!(vm.get_register(R_ACCUMULATOR)?, 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_jmp_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 0);
+        vm.set_register(R1, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+
+            // jmp label
+            Opcode::Jmp as u8,
+            0, 0, 0, 0, 0, 0, 0, 15,
+
+            // mov %r0 %r1
+            Opcode::MovR2R as u8,
+            R0 as u8,
+            R1 as u8,
+
+            // label:
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(0)?, 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_jz_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 0);
+        vm.set_register(R1, 123);
+        vm.set_register(R_ACCUMULATOR, 0);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+
+            // jz label
+            Opcode::Jz as u8,
+            0, 0, 0, 0, 0, 0, 0, 15,
+
+            // mov %r0 %r1
+            Opcode::MovR2R as u8,
+            R0 as u8,
+            R1 as u8,
+
+            // label:
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(0)?, 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_jnz_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 0);
+        vm.set_register(R1, 123);
+        vm.set_register(R_ACCUMULATOR, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+
+            // jnz label
+            Opcode::Jnz as u8,
+            0, 0, 0, 0, 0, 0, 0, 15,
+
+            // mov %r0 %r1
+            Opcode::MovR2R as u8,
+            R0 as u8,
+            R1 as u8,
+
+            // label:
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(0)?, 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_je_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 0);
+        vm.set_register(R1, 123);
+        vm.set_register(R_ACCUMULATOR, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0, 0, 0, 0, 0, 0, 123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+
+            // jnz label
+            Opcode::Je as u8,
+            0, 0, 0, 0, 0, 0, 0, 1,
+            0, 0, 0, 0, 0, 0, 0, 31,
+
+            // mov %r0 %r1
+            Opcode::MovR2R as u8,
+            R0 as u8,
+            R1 as u8,
+
+            // label:
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(0)?, 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_jne_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 0);
+        vm.set_register(R1, 123);
+        vm.set_register(R_ACCUMULATOR, 0);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0, 0, 0, 0, 0, 0, 123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+
+            // jnz label
+            Opcode::Jne as u8,
+            0, 0, 0, 0, 0, 0, 0, 1,
+            0, 0, 0, 0, 0, 0, 0, 31,
+
+            // mov %r0 %r1
+            Opcode::MovR2R as u8,
+            R0 as u8,
+            R1 as u8,
+
+            // label:
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(0)?, 0);
 
         Ok(())
     }
