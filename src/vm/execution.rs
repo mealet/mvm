@@ -70,6 +70,38 @@ impl VM {
                 self.set_register(destination as u64, value as u64)?;
             },
 
+            Opcode::MovR2M8 => {
+                let address = self.fetch_u64()?;
+                let src = self.fetch_u8()?;
+
+                let value = self.get_register(src as u64)?;
+                self.memory.set_u8(address, value as u8);
+            },
+
+            Opcode::MovR2M16 => {
+                let address = self.fetch_u64()?;
+                let src = self.fetch_u8()?;
+
+                let value = self.get_register(src as u64)?;
+                self.memory.set_u16(address, value as u16);
+            }
+
+            Opcode::MovR2M32 => {
+                let address = self.fetch_u64()?;
+                let src = self.fetch_u8()?;
+
+                let value = self.get_register(src as u64)?;
+                self.memory.set_u32(address, value as u32);
+            },
+
+            Opcode::MovR2M64 => {
+                let address = self.fetch_u64()?;
+                let src = self.fetch_u8()?;
+
+                let value = self.get_register(src as u64)?;
+                self.memory.set_u64(address, value);
+            },
+
             Opcode::Push8 => {
                 let src = self.fetch_u8()?;
                 let value = self.get_register(src as u64)?;
@@ -649,6 +681,123 @@ mod tests {
         vm.run()?;
 
         assert_eq!(vm.get_register(R0)?, 123);
+
+        Ok(())
+    }
+
+
+    #[test]
+    fn instruction_mov_r2m8_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // mov 30 %r0
+            Opcode::MovR2M8 as u8,
+            0, 0, 0, 0, 0, 0, 0, 30,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.memory.get_u8(30)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_mov_r2m16_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // mov 30 %r0
+            Opcode::MovR2M16 as u8,
+            0, 0, 0, 0, 0, 0, 0, 30,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.memory.get_u16(30)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_mov_r2m32_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // mov 30 %r0
+            Opcode::MovR2M32 as u8,
+            0, 0, 0, 0, 0, 0, 0, 30,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.memory.get_u32(30)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_mov_r2m64_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 123);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // mov 30 %r0
+            Opcode::MovR2M64 as u8,
+            0, 0, 0, 0, 0, 0, 0, 30,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.memory.get_u64(30)?, 123);
 
         Ok(())
     }

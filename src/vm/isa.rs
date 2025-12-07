@@ -6,8 +6,8 @@ pub enum Opcode {
     
     Halt = 0xf0,         // halt
     Return = 0xf1,       // ret
-    Call = 0x27,         // call &label
-    Interrupt = 0xf2,    // int u8
+    Call = 0x27,         // call label
+    Interrupt = 0xf2,    // int $u8
     
     // ---| Sections |---
     
@@ -21,6 +21,10 @@ pub enum Opcode {
     Mov32 = 0x05,        // mov %dest, $u32
     Mov64 = 0x06,        // mov %dest, $u64
     MovR2R = 0x07,       // mov %dest, %src
+    MovR2M8 = 0xef,       // mov address, %src
+    MovR2M16 = 0x28,      // mov address, %src
+    MovR2M32 = 0x29,      // mov address, %src
+    MovR2M64 = 0x40,      // mov address, %src
 
     // push instruction appends value from register to stack and places
     // offset (related to frame pointer) to %src.
@@ -88,11 +92,11 @@ pub enum Opcode {
 
     // ---| Movement |---
 
-    Jmp = 0x1d,          // jmp &label
-    Jz = 0x1e,           // jz &label
-    Jnz = 0x1f,          // jnz &label
-    Je = 0x21,           // je $u64 &label
-    Jne = 0x22,          // jne $u64 &label
+    Jmp = 0x1d,          // jmp label
+    Jz = 0x1e,           // jz label
+    Jnz = 0x1f,          // jnz label
+    Je = 0x21,           // je $u64 label
+    Jne = 0x22,          // jne $u64 label
 }
 
 impl TryFrom<u8> for Opcode {
@@ -113,6 +117,10 @@ impl TryFrom<u8> for Opcode {
             0x05 => Ok(Opcode::Mov32),
             0x06 => Ok(Opcode::Mov64),
             0x07 => Ok(Opcode::MovR2R),
+            0xef => Ok(Opcode::MovR2M8),
+            0x28 => Ok(Opcode::MovR2M16),
+            0x29 => Ok(Opcode::MovR2M32),
+            0x40 => Ok(Opcode::MovR2M64),
 
             0x30 => Ok(Opcode::Push8),
             0x31 => Ok(Opcode::Push16),
