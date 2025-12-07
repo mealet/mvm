@@ -115,7 +115,7 @@ impl VM {
 }
 
 impl VM {
-    pub fn get_register(&mut self, index: u64) -> Result<u64, MvmError> {
+    pub fn get_register(&self, index: u64) -> Result<u64, MvmError> {
         self.registers.get_u64(index * 8)
     }
 
@@ -123,7 +123,7 @@ impl VM {
         self.registers.set_u64(index * 8, value)
     }
 
-    fn peek_byte(&mut self) -> Result<u8, MvmError> {
+    fn peek_byte(&self) -> Result<u8, MvmError> {
         let instruction_ptr = self.get_register(R_INSTRUCTION_POINTER)?;
         self.memory.get_u8(instruction_ptr)
     }
@@ -167,7 +167,7 @@ impl VM {
 impl VM {
     // stack
 
-    fn stack_get_u8(&mut self, offset: u16) -> Result<u8, MvmError> {
+    fn stack_get_u8(&self, offset: u16) -> Result<u8, MvmError> {
         const BYTES_LENGTH: u64 = 1;
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
@@ -176,7 +176,7 @@ impl VM {
         self.memory.get_u8(address)
     }
 
-    fn stack_get_u16(&mut self, offset: u16) -> Result<u16, MvmError> {
+    fn stack_get_u16(&self, offset: u16) -> Result<u16, MvmError> {
         const BYTES_LENGTH: u64 = 2;
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
@@ -186,7 +186,7 @@ impl VM {
         self.memory.get_u16(address)
     }
 
-    fn stack_get_u32(&mut self, offset: u16) -> Result<u32, MvmError> {
+    fn stack_get_u32(&self, offset: u16) -> Result<u32, MvmError> {
         const BYTES_LENGTH: u64 = 4;
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
@@ -196,7 +196,7 @@ impl VM {
         self.memory.get_u32(address)
     }
 
-    fn stack_get_u64(&mut self, offset: u16) -> Result<u64, MvmError> {
+    fn stack_get_u64(&self, offset: u16) -> Result<u64, MvmError> {
         const BYTES_LENGTH: u64 = 8;
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
@@ -359,28 +359,28 @@ impl VM {
 
     // frame
 
-    fn frame_get_u8(&mut self, offset: u16) -> Result<u8, MvmError> {
+    fn frame_get_u8(&self, offset: u16) -> Result<u8, MvmError> {
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
         let address = frame_ptr + offset as u64;
 
         self.memory.get_u8(address)
     }
 
-    fn frame_get_u16(&mut self, offset: u16) -> Result<u16, MvmError> {
+    fn frame_get_u16(&self, offset: u16) -> Result<u16, MvmError> {
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
         let address = frame_ptr + offset as u64;
 
         self.memory.get_u16(address)
     }
 
-    fn frame_get_u32(&mut self, offset: u16) -> Result<u32, MvmError> {
+    fn frame_get_u32(&self, offset: u16) -> Result<u32, MvmError> {
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
         let address = frame_ptr + offset as u64;
 
         self.memory.get_u32(address)
     }
 
-    fn frame_get_u64(&mut self, offset: u16) -> Result<u64, MvmError> {
+    fn frame_get_u64(&self, offset: u16) -> Result<u64, MvmError> {
         let frame_ptr = self.get_register(R_FRAME_POINTER)?;
         let address = frame_ptr + offset as u64;
 
