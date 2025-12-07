@@ -301,9 +301,14 @@ impl VM {
         const BYTES_LENGTH: u64 = 1;
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        let frame_ptr = self.get_register(R_FRAME_POINTER)?;
 
         if (stack_ptr - BYTES_LENGTH) < (self.memory.len() - self.stack_size) as u64 {
             return Err(MvmError::EmptyStackPop);
+        }
+
+        if (stack_ptr - BYTES_LENGTH) < (frame_ptr) {
+            return Err(MvmError::StackOutOfFrame);
         }
 
         let value = self.memory.get_u8(stack_ptr - BYTES_LENGTH)?;
@@ -316,9 +321,14 @@ impl VM {
         const BYTES_LENGTH: u64 = 2;
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        let frame_ptr = self.get_register(R_FRAME_POINTER)?;
 
         if (stack_ptr - BYTES_LENGTH) < (self.memory.len() - self.stack_size) as u64 {
             return Err(MvmError::EmptyStackPop);
+        }
+
+        if (stack_ptr - BYTES_LENGTH) < (frame_ptr) {
+            return Err(MvmError::StackOutOfFrame);
         }
 
         let value = self.memory.get_u16(stack_ptr - BYTES_LENGTH)?;
@@ -331,9 +341,14 @@ impl VM {
         const BYTES_LENGTH: u64 = 4;
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        let frame_ptr = self.get_register(R_FRAME_POINTER)?;
 
         if (stack_ptr - BYTES_LENGTH) < (self.memory.len() - self.stack_size) as u64 {
             return Err(MvmError::EmptyStackPop);
+        }
+
+        if (stack_ptr - BYTES_LENGTH) < (frame_ptr) {
+            return Err(MvmError::StackOutOfFrame);
         }
 
         let value = self.memory.get_u32(stack_ptr - BYTES_LENGTH)?;
@@ -346,10 +361,16 @@ impl VM {
         const BYTES_LENGTH: u64 = 8;
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        let frame_ptr = self.get_register(R_FRAME_POINTER)?;
 
         if (stack_ptr - BYTES_LENGTH) < (self.memory.len() - self.stack_size) as u64 {
             return Err(MvmError::EmptyStackPop);
         }
+
+        if (stack_ptr - BYTES_LENGTH) < (frame_ptr) {
+            return Err(MvmError::StackOutOfFrame);
+        }
+
 
         let value = self.memory.get_u64(stack_ptr - BYTES_LENGTH)?;
         self.set_register(R_STACK_POINTER, (stack_ptr - BYTES_LENGTH))?;
@@ -413,6 +434,30 @@ impl VM {
         let address = frame_ptr + offset as u64;
 
         self.memory.set_u64(address, value)
+    }
+}
+
+impl VM {
+    fn push_state(&mut self) -> Result<(), MvmError> {
+        self.stack_push_u64(self.get_register(R0)?)?;
+        self.stack_push_u64(self.get_register(R1)?)?;
+        self.stack_push_u64(self.get_register(R2)?)?;
+        self.stack_push_u64(self.get_register(R3)?)?;
+        self.stack_push_u64(self.get_register(R4)?)?;
+        self.stack_push_u64(self.get_register(R5)?)?;
+        self.stack_push_u64(self.get_register(R6)?)?;
+        self.stack_push_u64(self.get_register(R7)?)?;
+        self.stack_push_u64(self.get_register(R8)?)?;
+        self.stack_push_u64(self.get_register(R_SYSTEM_CALL)?)?;
+        self.stack_push_u64(self.get_register(R_ACCUMULATOR)?)?;
+        self.stack_push_u64(self.get_register(R_INSTRUCTION_POINTER)?)?;
+        self.stack_push_u64(self.get_register(R_STACK_POINTER)?)?;
+        self.stack_push_u64(self.get_register(R_FRAME_POINTER)?)?;
+
+        let stack_ptr = self.get_register(R_STACK_POINTER)?;
+        self.set_register(R_FRAME_POINTER, stack_ptr)?;
+
+        Ok(())
     }
 }
 
@@ -797,6 +842,35 @@ mod tests {
         assert_eq!(vm.frame_get_u64(OFFSET1)?, 123);
         assert_eq!(vm.frame_get_u64(OFFSET2)?, 123);
         assert_eq!(vm.frame_get_u64(OFFSET3)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_push_state_test() -> Result<(), MvmError> {
+        const PUSHED_REGSITERS: u64 = 14;
+        const REGISTERS_EACH_SIZE: u64 = 8;
+        const MEMSIZE: u64 = 256;
+        const STACKSIZE: u64 = 128;
+
+        let mut vm = VM::new(256, 128)?;
+
+        vm.set_register(R0, 123)?;
+        vm.set_register(R1, 123)?;
+        vm.set_register(R2, 123)?;
+        vm.set_register(R3, 123)?;
+        vm.set_register(R4, 123)?;
+        vm.set_register(R5, 123)?;
+        vm.set_register(R6, 123)?;
+        vm.set_register(R7, 123)?;
+        vm.set_register(R8, 123)?;
+        vm.set_register(R_SYSTEM_CALL, 123)?;
+        vm.set_register(R_ACCUMULATOR, 123)?;
+
+        vm.push_state()?;
+
+        assert_eq!(vm.get_register(R_FRAME_POINTER)?, MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE));
+        assert_eq!(vm.get_register(R_STACK_POINTER)?, MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE));
 
         Ok(())
     }

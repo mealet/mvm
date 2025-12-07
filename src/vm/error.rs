@@ -14,6 +14,9 @@ pub enum MvmError {
     #[error("stack data overflow")]
     StackOverflow,
 
+    #[error("stack pointer goes out of frame")]
+    StackOutOfFrame,
+
     #[error("pop on empty (or small) stack")]
     EmptyStackPop,
 
