@@ -86,8 +86,8 @@ pub enum Opcode {
     CmpR2R = 0x26,       // cmp %reg, %reg
     
     // Comparison result goes to accumulator:
-    // * left value bigger = -1
-    // * right value bigger = 1
+    // * left value bigger = 1
+    // * right value bigger = 2
     // * both are equal = 0
 
     // ---| Movement |---

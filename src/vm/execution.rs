@@ -448,11 +448,61 @@ impl VM {
                 self.set_register(destination as u64, left.wrapping_div(right))?;
             },
 
-            Opcode::Cmp8 => todo!(),
-            Opcode::Cmp16 => todo!(),
-            Opcode::Cmp32 => todo!(),
-            Opcode::Cmp64 => todo!(),
-            Opcode::CmpR2R => todo!(),
+            Opcode::Cmp8 => {
+                let reg = self.fetch_u8()?;
+                let addr = self.fetch_u64()?;
+
+                let reg_value = self.get_register(reg as u64)?;
+                let addr_value = self.memory.get_u8(addr)? as u64;
+
+                let cmp_result = if reg_value > addr_value { 1 } else if reg_value < addr_value { 2 } else { 0 };
+
+                self.set_register(R_ACCUMULATOR, cmp_result)?;
+            },
+            Opcode::Cmp16 => {
+                let reg = self.fetch_u8()?;
+                let addr = self.fetch_u64()?;
+
+                let reg_value = self.get_register(reg as u64)?;
+                let addr_value = self.memory.get_u16(addr)? as u64;
+
+                let cmp_result = if reg_value > addr_value { 1 } else if reg_value < addr_value { 2 } else { 0 };
+
+                self.set_register(R_ACCUMULATOR, cmp_result)?;
+            },
+            Opcode::Cmp32 => {
+                let reg = self.fetch_u8()?;
+                let addr = self.fetch_u64()?;
+
+                let reg_value = self.get_register(reg as u64)?;
+                let addr_value = self.memory.get_u32(addr)? as u64;
+
+                let cmp_result = if reg_value > addr_value { 1 } else if reg_value < addr_value { 2 } else { 0 };
+
+                self.set_register(R_ACCUMULATOR, cmp_result)?;
+            },
+            Opcode::Cmp64 => {
+                let reg = self.fetch_u8()?;
+                let addr = self.fetch_u64()?;
+
+                let reg_value = self.get_register(reg as u64)?;
+                let addr_value = self.memory.get_u64(addr)? as u64;
+
+                let cmp_result = if reg_value > addr_value { 1 } else if reg_value < addr_value { 2 } else { 0 };
+
+                self.set_register(R_ACCUMULATOR, cmp_result)?;
+            },
+            Opcode::CmpR2R => {
+                let left_reg = self.fetch_u8()?;
+                let right_reg= self.fetch_u8()?;
+
+                let left_value = self.get_register(left_reg as u64)?;
+                let right_value = self.get_register(right_reg as u64)?;
+
+                let cmp_result = if left_reg > right_reg { 1 } else if left_reg < right_reg { 2 } else { 0 };
+
+                self.set_register(R_ACCUMULATOR, cmp_result)?;
+            },
 
             Opcode::Jmp => todo!(),
             Opcode::Jz => todo!(),
@@ -2023,6 +2073,127 @@ mod tests {
         vm.run()?;
 
         assert_eq!(vm.get_register(R0)?, 255);
+
+        Ok(())
+    }
+
+
+    #[test]
+    fn instruction_cmp8_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 50);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // cmp %r0 $123
+            Opcode::Cmp8 as u8,
+            R0 as u8,
+            0, 0, 0, 0, 0, 0, 0, 1, // 64-bit address to data section
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R_ACCUMULATOR)?, 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_cmp16_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 50);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // cmp %r0 $123
+            Opcode::Cmp16 as u8,
+            R0 as u8,
+            0, 0, 0, 0, 0, 0, 0, 1, // 64-bit address to data section
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R_ACCUMULATOR)?, 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_cmp32_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 50);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0, 0, 123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // cmp %r0 $123
+            Opcode::Cmp32 as u8,
+            R0 as u8,
+            0, 0, 0, 0, 0, 0, 0, 1, // 64-bit address to data section
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R_ACCUMULATOR)?, 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_cmp64_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 50);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0, 0, 0, 0, 0, 0, 123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // cmp %r0 $123
+            Opcode::Cmp64 as u8,
+            R0 as u8,
+            0, 0, 0, 0, 0, 0, 0, 1, // 64-bit address to data section
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R_ACCUMULATOR)?, 2);
 
         Ok(())
     }
