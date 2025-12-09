@@ -23,7 +23,17 @@ impl VM {
                 self.push_state()?;
                 self.set_register(R_INSTRUCTION_POINTER, address)?;
             },
-            Opcode::Interrupt => todo!(),
+            Opcode::Interrupt => {
+                let address = self.fetch_u64()?;
+                let vector = self.memory.get_u8(address)?;
+
+                if let Some(handler) = self.interrupt_handlers[vector as usize] {
+                    self.push_state()?;
+                    handler(self);
+                } else {
+                    return Err(MvmError::UnknownInterrupt);
+                }
+            },
 
             Opcode::DataSection => {
                 while let Ok(instr) = self.fetch_u8() {

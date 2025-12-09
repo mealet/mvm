@@ -7,6 +7,7 @@ mod isa;
 mod memory;
 mod error;
 mod execution;
+mod interrupts;
 
 // Registers Indexes
 // -----------------
@@ -41,6 +42,13 @@ pub struct VM {
     /// R15 - Zero Flag
     pub registers: MemoryBuffer,
 
+    pub interrupt_handlers: [
+        Option<
+            fn(&mut Self) -> Result<(), MvmError> // interrupt function signature
+        >;
+        256
+    ],
+
     pub running: bool,
     pub exit_code: u8,
 
@@ -55,6 +63,7 @@ impl VM {
         let mut vm = Self {
             memory,
             registers: MemoryBuffer::new(15 * 8),
+            interrupt_handlers: [None; 256],
             running: false,
             exit_code: 1,
             stack_size,
@@ -70,6 +79,9 @@ impl VM {
         vm.set_register(R_FRAME_POINTER, stack_ptr)?;
 
         vm.memory.set_u8(stack_ptr, 0xff)?;
+
+        // initializing interrupts
+        vm.init_interrupts();
 
         Ok(vm)
     }
@@ -500,7 +512,7 @@ impl VM {
 
         self.set_register(R_STACK_POINTER, stack_ptr)?;
         self.set_register(R_INSTRUCTION_POINTER, instruction_ptr)?;
-        self.set_register(R_ACCUMULATOR, accumulator)?;
+        // self.set_register(R_ACCUMULATOR, accumulator)?; // -- accumulator will be used for result
         self.set_register(R_SYSTEM_CALL, system_call)?;
         self.set_register(R8, r8)?;
         self.set_register(R7, r7)?;

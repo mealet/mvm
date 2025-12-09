@@ -26,6 +26,9 @@ pub enum MvmError {
     #[error("empty call stack is being popped")]
     EmptyCallStackPop,
 
+    #[error("unknown interrupt is being called")]
+    UnknownInterrupt,
+
     #[error("catched division by zero")]
     DivisionByZero,
 
