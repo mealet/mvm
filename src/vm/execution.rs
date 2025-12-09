@@ -14,8 +14,15 @@ impl VM {
                 self.running = false;
                 let _ = self.step_back()?;
             },
-            Opcode::Return => todo!(),
-            Opcode::Call => todo!(),
+            Opcode::Return => {
+                self.pop_state()?;
+            },
+            Opcode::Call => {
+                let address = self.fetch_u64()?;
+
+                self.push_state()?;
+                self.set_register(R_INSTRUCTION_POINTER, address)?;
+            },
             Opcode::Interrupt => todo!(),
 
             Opcode::DataSection => {
@@ -2424,6 +2431,89 @@ mod tests {
         vm.run()?;
 
         assert_eq!(vm.get_register(0)?, 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_call_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(256, 128)?;
+
+        vm.set_register(R0, 0);
+        vm.set_register(R1, 123);
+        vm.set_register(R_ACCUMULATOR, 0);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0, 0, 0, 0, 0, 0, 123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+
+            // call label
+            Opcode::Call as u8,
+            0, 0, 0, 0, 0, 0, 0, 23,
+
+            // mov %r0 %r1
+            Opcode::MovR2R as u8,
+            R0 as u8,
+            R1 as u8,
+
+            // label:
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(0)?, 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_ret_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(256, 128)?;
+
+        vm.set_register(R0, 0);
+        vm.set_register(R1, 123);
+        vm.set_register(R_ACCUMULATOR, 0);
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            0, 0, 0, 0, 0, 0, 0, 123,
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+
+            // call label
+            Opcode::Call as u8,
+            0, 0, 0, 0, 0, 0, 0, 32,
+
+            // mov %r0 %r1
+            Opcode::MovR2R as u8,
+            R0 as u8,
+            R1 as u8,
+
+            Opcode::Jmp as u8,
+            0, 0, 0, 0, 0, 0, 0, 33,
+
+            // label:
+            Opcode::Return as u8,
+
+            // -- program end --
+            Opcode::Halt as u8
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(0)?, 123);
 
         Ok(())
     }
