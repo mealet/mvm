@@ -439,6 +439,7 @@ impl VM {
 
 impl VM {
     fn push_state(&mut self) -> Result<(), MvmError> {
+        self.stack_push_u64(self.get_register(R_STACK_POINTER)?)?;
         self.stack_push_u64(self.get_register(R0)?)?;
         self.stack_push_u64(self.get_register(R1)?)?;
         self.stack_push_u64(self.get_register(R2)?)?;
@@ -451,11 +452,55 @@ impl VM {
         self.stack_push_u64(self.get_register(R_SYSTEM_CALL)?)?;
         self.stack_push_u64(self.get_register(R_ACCUMULATOR)?)?;
         self.stack_push_u64(self.get_register(R_INSTRUCTION_POINTER)?)?;
-        self.stack_push_u64(self.get_register(R_STACK_POINTER)?)?;
         self.stack_push_u64(self.get_register(R_FRAME_POINTER)?)?;
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
         self.set_register(R_FRAME_POINTER, stack_ptr)?;
+
+        Ok(())
+    }
+
+    fn pop_state(&mut self) -> Result<(), MvmError> {
+        // erasing stack frame data
+
+        while self.get_register(R_STACK_POINTER)? > self.get_register(R_FRAME_POINTER)? {
+            let _ = self.stack_pop_u8()?;
+        }
+
+        // returning registers values
+
+        self.set_register(R_FRAME_POINTER, self.get_register(R_FRAME_POINTER)? - 8)?;
+
+        let frame_ptr = self.stack_pop_u64()?;
+        self.set_register(R_FRAME_POINTER, frame_ptr)?;
+
+        let instruction_ptr = self.stack_pop_u64()?;
+        let accumulator = self.stack_pop_u64()?;
+        let system_call = self.stack_pop_u64()?;
+        let r8 = self.stack_pop_u64()?;
+        let r7 = self.stack_pop_u64()?;
+        let r6 = self.stack_pop_u64()?;
+        let r5 = self.stack_pop_u64()?;
+        let r4 = self.stack_pop_u64()?;
+        let r3 = self.stack_pop_u64()?;
+        let r2 = self.stack_pop_u64()?;
+        let r1 = self.stack_pop_u64()?;
+        let r0 = self.stack_pop_u64()?;
+        let stack_ptr = self.stack_pop_u64()?;
+
+        self.set_register(R_STACK_POINTER, stack_ptr)?;
+        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr)?;
+        self.set_register(R_ACCUMULATOR, accumulator)?;
+        self.set_register(R_SYSTEM_CALL, system_call)?;
+        self.set_register(R8, r8)?;
+        self.set_register(R7, r7)?;
+        self.set_register(R6, r6)?;
+        self.set_register(R5, r5)?;
+        self.set_register(R4, r4)?;
+        self.set_register(R3, r3)?;
+        self.set_register(R2, r2)?;
+        self.set_register(R1, r1)?;
+        self.set_register(R0, r0)?;
 
         Ok(())
     }
@@ -871,6 +916,62 @@ mod tests {
 
         assert_eq!(vm.get_register(R_FRAME_POINTER)?, MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE));
         assert_eq!(vm.get_register(R_STACK_POINTER)?, MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE));
+
+        Ok(())
+    }
+
+    #[test]
+    fn vm_pop_state_test() -> Result<(), MvmError> {
+        const PUSHED_REGSITERS: u64 = 14;
+        const REGISTERS_EACH_SIZE: u64 = 8;
+        const MEMSIZE: u64 = 256;
+        const STACKSIZE: u64 = 128;
+        const REG_VALUES: u64 = 123;
+
+        let mut vm = VM::new(256, 128)?;
+
+        let prev_stack_ptr = vm.get_register(R_STACK_POINTER)?;
+        let prev_frame_ptr = vm.get_register(R_FRAME_POINTER)?;
+
+        vm.set_register(R0, REG_VALUES)?;
+        vm.set_register(R1, REG_VALUES)?;
+        vm.set_register(R2, REG_VALUES)?;
+        vm.set_register(R3, REG_VALUES)?;
+        vm.set_register(R4, REG_VALUES)?;
+        vm.set_register(R5, REG_VALUES)?;
+        vm.set_register(R6, REG_VALUES)?;
+        vm.set_register(R7, REG_VALUES)?;
+        vm.set_register(R8, REG_VALUES)?;
+        vm.set_register(R_SYSTEM_CALL, REG_VALUES)?;
+        vm.set_register(R_ACCUMULATOR, REG_VALUES)?;
+
+        vm.push_state()?;
+        
+        assert_eq!(vm.get_register(R_FRAME_POINTER)?, MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE));
+        assert_eq!(vm.get_register(R_STACK_POINTER)?, MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE));
+
+        // for testing extra data erase
+        vm.stack_push_u64(0);
+        vm.stack_push_u64(0);
+        vm.stack_push_u64(0);
+        vm.stack_push_u64(0);
+
+        vm.pop_state()?;
+
+        assert_eq!(vm.get_register(R0)?, REG_VALUES);
+        assert_eq!(vm.get_register(R1)?, REG_VALUES);
+        assert_eq!(vm.get_register(R2)?, REG_VALUES);
+        assert_eq!(vm.get_register(R3)?, REG_VALUES);
+        assert_eq!(vm.get_register(R4)?, REG_VALUES);
+        assert_eq!(vm.get_register(R5)?, REG_VALUES);
+        assert_eq!(vm.get_register(R6)?, REG_VALUES);
+        assert_eq!(vm.get_register(R7)?, REG_VALUES);
+        assert_eq!(vm.get_register(R8)?, REG_VALUES);
+        assert_eq!(vm.get_register(R_SYSTEM_CALL)?, REG_VALUES);
+        assert_eq!(vm.get_register(R_ACCUMULATOR)?, REG_VALUES);
+
+        assert_eq!(vm.get_register(R_STACK_POINTER)?, prev_stack_ptr);
+        assert_eq!(vm.get_register(R_FRAME_POINTER)?, prev_frame_ptr);
 
         Ok(())
     }
