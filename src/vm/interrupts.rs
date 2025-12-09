@@ -2,6 +2,8 @@ use super::*;
 
 impl VM {
     pub fn init_interrupts(&mut self) {
+        // WARNING: Don't forget to add implemented interrupt here!
+
         self.interrupt_handlers[0] = Some(Self::handle_int0);
         self.interrupt_handlers[80] = Some(Self::handle_int80);
     }
