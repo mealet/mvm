@@ -2,9 +2,9 @@ name: Unit Tests
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["main"]
   workflow_dispatch:
 
 env:
@@ -17,14 +17,14 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
-    - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
 
-    - name: ⚙️ Install Nextest
-      uses: taiki-e/install-action@nextest
+      - name: ⚙️ Install Nextest
+        uses: taiki-e/install-action@nextest
 
-    - name: ⌛ Packages Tests
-      uses: actions-rs/cargo@v1
-      with:
-        command: nextest
-        args: run
+      - name: ⌛ Packages Tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: nextest
+          args: run
