@@ -20,6 +20,12 @@ pub enum MvmError {
     #[error("pop on empty (or small) stack")]
     EmptyStackPop,
 
+    #[error("call stack is overflowed")]
+    CallStackOverflow,
+
+    #[error("empty call stack is being popped")]
+    EmptyCallStackPop,
+
     #[error("catched division by zero")]
     DivisionByZero,
 

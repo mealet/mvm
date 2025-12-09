@@ -439,6 +439,12 @@ impl VM {
 
 impl VM {
     fn push_state(&mut self) -> Result<(), MvmError> {
+        const REQUIRED_SPACE: u64 = 14 * 8; // 14 is count of registers below
+        
+        if self.get_register(R_STACK_POINTER)? + REQUIRED_SPACE > self.memory.len() as u64 {
+            return Err(MvmError::CallStackOverflow);
+        }
+
         self.stack_push_u64(self.get_register(R_STACK_POINTER)?)?;
         self.stack_push_u64(self.get_register(R0)?)?;
         self.stack_push_u64(self.get_register(R1)?)?;
@@ -461,6 +467,10 @@ impl VM {
     }
 
     fn pop_state(&mut self) -> Result<(), MvmError> {
+        if self.get_register(R_FRAME_POINTER)? as usize <= self.memory.len() - self.stack_size {
+            return Err(MvmError::EmptyCallStackPop);
+        }
+
         // erasing stack frame data
 
         while self.get_register(R_STACK_POINTER)? > self.get_register(R_FRAME_POINTER)? {
