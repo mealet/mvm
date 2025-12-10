@@ -39,7 +39,6 @@ pub struct VM {
     /// R12 - Stack Pointer
     /// R13 - Frame Pointer
     /// R14 - Memory Pointer (next address after program)
-    /// R15 - Zero Flag
     pub registers: MemoryBuffer,
 
     pub interrupt_handlers: [

@@ -1,7 +1,8 @@
 // TODO: Remove this when release
 #![allow(unused)]
 
-pub mod vm;
+mod vm;
+mod assembly;
 
 fn main() {
     println!("Hello, world!");
