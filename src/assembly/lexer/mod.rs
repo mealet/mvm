@@ -131,6 +131,37 @@ impl Lexer {
 }
 
 impl Lexer {
+    pub fn tokenize(&mut self) -> Result<Token, AssemblyError> {
+        match self.peek_char() {
+            chr if chr.is_ascii_whitespace() || chr == '\r' => {
+                while self.peek_char().is_ascii_whitespace() || self.peek_char() == '\r' {
+                    let _ = self.next_char();
+                }
+
+                self.tokenize()
+            }
+
+            // comment
+            ';' => {
+                while self.peek_char() != '\n' && self.peek_char() != '\0' {
+                    let _ = self.next_char();
+                }
+
+                self.tokenize()
+            }
+
+            unknown_character => {
+                Err(AssemblyError::UnknownCharacter {
+                    character: unknown_character,
+                    src: self.src.clone(),
+                    span: (self.position, 1).into()
+                })
+            }
+        }
+    }
+}
+
+impl Lexer {
     fn character_escape(escape: char) -> Option<char> {
         match escape {
             '0' => Some('\0'),

@@ -33,4 +33,6 @@ pub enum TokenType {
     Comma,          // ,
     LBrack,         // [
     RBrack,         // ]
+
+    EOF,            // end of file
 }

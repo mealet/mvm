@@ -15,7 +15,7 @@ pub enum AssemblyError {
         code(mvm::asm::unknown_character),
     )]
     UnknownCharacter {
-        character: String,
+        character: char,
 
         #[source_code]
         src: Source,
