@@ -7,7 +7,7 @@ pub use token::{Token, TokenType};
 mod token;
 mod macros;
 
-pub struct Lexer<'input> {
+pub struct Lexer {
     src: Source,
 
     std_symbols: HashMap<char, Token>,
@@ -15,12 +15,12 @@ pub struct Lexer<'input> {
     std_constants: HashMap<String, Token>,
     std_instructions: HashMap<String, Token>,
 
-    input: std::str::Chars<'input>,
+    input: Vec<char>,
+    prev: char,
     position: usize,
-    current: char,
 }
 
-impl<'input> Lexer<'input> {
+impl Lexer {
     pub fn new(filename: impl AsRef<str>, source: impl AsRef<str>) -> Self {
         let mut lexer = Self {
             src: NamedSource::new(filename.as_ref(), source.as_ref().to_owned()),
@@ -100,11 +100,51 @@ impl<'input> Lexer<'input> {
                 macros::std_instruction!("jne"),
             ]),
 
-            input: source.as_ref().chars(),
+            input: source.as_ref().chars().collect::<Vec<char>>(),
+            prev: '\0',
             position: 0,
-            current: ' '
         };
 
         lexer
+    }
+
+    fn peek_prev(&self) -> char {
+        return self.prev;
+    }
+
+    fn peek_char(&self) -> char {
+        match self.input.get(self.position) {
+            Some(chr) => *chr,
+            None => '\0'
+        }
+    }
+
+    fn next_char(&mut self) -> char {
+        self.prev = self.peek_char();
+
+        self.position += 1;
+        return self.peek_char();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn lexer_movement_test() {
+        let mut lexer = Lexer::new("test", "123");
+        
+        assert_eq!(lexer.peek_char(), '1');
+        assert_eq!(lexer.peek_prev(), '\0');
+
+        assert_eq!(lexer.next_char(), '2');
+        assert_eq!(lexer.peek_prev(), '1');
+
+        assert_eq!(lexer.next_char(), '3');
+        assert_eq!(lexer.peek_prev(), '2');
+
+        assert_eq!(lexer.next_char(), '\0');
+        assert_eq!(lexer.peek_prev(), '3');
     }
 }
