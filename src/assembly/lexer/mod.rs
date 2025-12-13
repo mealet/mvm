@@ -12,6 +12,7 @@ mod macros;
 
 pub struct Lexer {
     src: Source,
+    position: usize,
 
     std_symbols: HashMap<char, Token>,
     std_keywords: HashMap<String, Token>,
@@ -20,7 +21,8 @@ pub struct Lexer {
 
     input: Vec<char>,
     prev: char,
-    position: usize,
+
+    errors: Vec<AssemblyError>,
 }
 
 impl Lexer {
@@ -106,6 +108,7 @@ impl Lexer {
             input: source.as_ref().chars().collect::<Vec<char>>(),
             prev: '\0',
             position: 0,
+            errors: Vec::new()
         };
 
         lexer
@@ -128,40 +131,59 @@ impl Lexer {
         self.position += 1;
         return self.peek_char();
     }
-}
 
-impl Lexer {
-    pub fn tokenize(&mut self) -> Result<Token, AssemblyError> {
-        match self.peek_char() {
-            chr if chr.is_ascii_whitespace() || chr == '\r' => {
-                while self.peek_char().is_ascii_whitespace() || self.peek_char() == '\r' {
-                    let _ = self.next_char();
-                }
+    fn skip_char(&mut self) {
+        let _ = self.next_char();
+    }
 
-                self.tokenize()
-            }
-
-            // comment
-            ';' => {
-                while self.peek_char() != '\n' && self.peek_char() != '\0' {
-                    let _ = self.next_char();
-                }
-
-                self.tokenize()
-            }
-
-            unknown_character => {
-                Err(AssemblyError::UnknownCharacter {
-                    character: unknown_character,
-                    src: self.src.clone(),
-                    span: (self.position, 1).into()
-                })
-            }
-        }
+    fn error(&mut self, error: AssemblyError) {
+        self.errors.push(error);
     }
 }
 
 impl Lexer {
+    pub fn tokenize(&mut self) -> Result<Vec<Token>, &[AssemblyError]> {
+        let mut output: Vec<Token> = Vec::new();
+
+        while !self.is_eof() {
+            match self.peek_char() {
+                chr if chr.is_ascii_whitespace() || ['\n', '\r'].contains(&chr) => self.skip_char(),
+
+                // comment
+                ';' => {
+                    while self.peek_char() != '\n' && self.peek_char() != '\0' {
+                        self.skip_char();
+                    }
+                }
+
+                unknown_character => {
+                    self.error(AssemblyError::UnknownCharacter {
+                        character: unknown_character,
+                        src: self.src.clone(),
+                        span: (self.position, 1).into()
+                    });
+                    self.skip_char();
+                }
+            }
+        }
+
+        if !self.errors.is_empty() {
+            return Err(&self.errors);
+        }
+
+        if output.last().unwrap_or(&Token::new(Default::default(), TokenType::Undefined, (0, 0).into())).token_type != TokenType::EOF {
+            output.push(Token::new(Default::default(), TokenType::EOF, (0, 0).into()));
+        }
+
+        Ok(output)
+    }
+}
+
+impl Lexer {
+    fn is_eof(&self) -> bool {
+        self.peek_char() == '\0'
+    }
+
     fn character_escape(escape: char) -> Option<char> {
         match escape {
             '0' => Some('\0'),
@@ -204,7 +226,7 @@ impl Lexer {
                         }
 
                         mode = ParseMode::Binary;
-                        let _ = self.next_char();
+                        self.skip_char();
                         continue;
                     },
 
@@ -218,7 +240,7 @@ impl Lexer {
                         }
 
                         mode = ParseMode::Hexadecimal;
-                        let _ = self.next_char();
+                        self.skip_char();
                         continue;
                     },
 
@@ -247,7 +269,7 @@ impl Lexer {
                 chr => value.push(chr)
             }
 
-            let _ =self.next_char();
+            self.skip_char();
         }
 
         if value.is_empty() {

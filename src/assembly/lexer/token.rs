@@ -35,4 +35,5 @@ pub enum TokenType {
     RBrack,         // ]
 
     EOF,            // end of file
+    Undefined,      // undefined token type
 }
