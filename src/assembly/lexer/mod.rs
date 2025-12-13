@@ -182,7 +182,29 @@ impl Lexer {
                         },
 
                         id if after_prefix.is_ascii_alphabetic() => {
-                            todo!()
+                            const ALLOWED_ID_CHARS: [char; 1] = ['_'];
+
+                            let mut id= String::new();
+                            let id_offset = self.position;
+
+                            while self.peek_char().is_ascii_alphanumeric() || ALLOWED_ID_CHARS.contains(&self.peek_char()) {
+                                id.push(self.peek_char());
+                                self.skip_char();
+                            }
+
+                            if let Some(token) = self.std_constants.get(&id) {
+                                let mut token = token.clone();
+                                token.span = (span_start, token.span.len() + 1).into();
+
+                                output.push(token);
+                            } else {
+                                self.error(AssemblyError::InvalidConstant {
+                                    error: format!("Assembly constant \"{id}\" not found"),
+                                    label: format!("verify this identifier"),
+                                    src: self.src.clone(),
+                                    span: error::position_to_span(id_offset, self.position)
+                                });
+                            }
                         },
 
                         _ => {
@@ -193,7 +215,7 @@ impl Lexer {
                                 error: format!("Undefined constant sequence found after `$` prefix"),
                                 label: format!("ensure that this constant is valid"),
                                 src: self.src.clone(),
-                                span: error::position_to_span(err_offset, self.position - 1)
+                                span: error::position_to_span(err_offset, self.position)
                             });
                         }
                     }
@@ -216,7 +238,7 @@ impl Lexer {
                         error: format!("Numerical constants are not allowed without `$` prefix"),
                         label: format!("add the `$` prefix before constant here"),
                         src: self.src.clone(),
-                        span: error::position_to_span(span_offset, self.position - 1)
+                        span: error::position_to_span(span_offset, self.position)
                     });
                 }
 
@@ -558,6 +580,34 @@ mod tests {
                 Token::new(String::from("255"), TokenType::Constant, (5, 5).into()),
                 Token::new(String::from("15"), TokenType::Constant, (11, 7).into()),
                 Token::new(String::from("1.23"), TokenType::Constant, (19, 5).into()),
+                Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn lexer_named_constants_test() {
+        let mut lexer = Lexer::new("test", "$r0 $r1 $r2 $r3 $r4 $r5 $r6 $r7 $r8 $syscall $accumulator $instruction_ptr $stack_ptr $frame_ptr $mem_ptr");
+        let tokens = lexer.tokenize().unwrap();
+
+        assert_eq!(
+            tokens,
+            [
+                Token::new(String::from("r0"), TokenType::AsmConstant, (0, 3).into()),
+                Token::new(String::from("r1"), TokenType::AsmConstant, (4, 3).into()),
+                Token::new(String::from("r2"), TokenType::AsmConstant, (8, 3).into()),
+                Token::new(String::from("r3"), TokenType::AsmConstant, (12, 3).into()),
+                Token::new(String::from("r4"), TokenType::AsmConstant, (16, 3).into()),
+                Token::new(String::from("r5"), TokenType::AsmConstant, (20, 3).into()),
+                Token::new(String::from("r6"), TokenType::AsmConstant, (24, 3).into()),
+                Token::new(String::from("r7"), TokenType::AsmConstant, (28, 3).into()),
+                Token::new(String::from("r8"), TokenType::AsmConstant, (32, 3).into()),
+                Token::new(String::from("syscall"), TokenType::AsmConstant, (36, 8).into()),
+                Token::new(String::from("accumulator"), TokenType::AsmConstant, (45, 12).into()),
+                Token::new(String::from("instruction_ptr"), TokenType::AsmConstant, (58, 16).into()),
+                Token::new(String::from("stack_ptr"), TokenType::AsmConstant, (75, 10).into()),
+                Token::new(String::from("frame_ptr"), TokenType::AsmConstant, (86, 10).into()),
+                Token::new(String::from("mem_ptr"), TokenType::AsmConstant, (97, 8).into()),
                 Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
             ]
         );
