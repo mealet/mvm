@@ -661,6 +661,22 @@ mod tests {
     }
 
     #[test]
+    fn lexer_identifiers_test() {
+        let mut lexer = Lexer::new("test", "asd .data he1");
+        let tokens = lexer.tokenize().unwrap();
+
+        assert_eq!(
+            tokens,
+            [
+                Token::new(String::from("asd"), TokenType::Identifier, (0, 3).into()),
+                Token::new(String::from(".data"), TokenType::Identifier, (4, 5).into()),
+                Token::new(String::from("he1"), TokenType::Identifier, (10, 3).into()),
+                Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
+            ]
+        );
+    }
+
+    #[test]
     fn lexer_keywords_test() {
         let mut lexer = Lexer::new("test", "section entry ascii");
         let tokens = lexer.tokenize().unwrap();
