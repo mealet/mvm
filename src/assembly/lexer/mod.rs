@@ -10,6 +10,8 @@ pub use token::{Token, TokenType};
 mod token;
 mod macros;
 
+const ALLOWED_ID_CHARS: [char; 2] = ['_', '.'];
+
 pub struct Lexer {
     src: Source,
     position: usize,
@@ -137,7 +139,7 @@ impl Lexer {
     }
 
     fn skip_to_whitespace(&mut self) {
-        while !self.peek_char().is_ascii_whitespace()
+        while !self.peek_char().is_whitespace()
             || self.peek_char() != '\0' {
             self.skip_char();
         }
@@ -154,7 +156,7 @@ impl Lexer {
 
         while !self.is_eof() {
             match self.peek_char() {
-                chr if chr.is_ascii_whitespace() || ['\n', '\r'].contains(&chr) => self.skip_char(),
+                chr if chr.is_whitespace() || ['\n', '\r'].contains(&chr) => self.skip_char(),
 
                 // comment
                 ';' => {
@@ -182,8 +184,6 @@ impl Lexer {
                         },
 
                         id if after_prefix.is_ascii_alphabetic() => {
-                            const ALLOWED_ID_CHARS: [char; 1] = ['_'];
-
                             let mut id= String::new();
                             let id_offset = self.position;
 
@@ -222,6 +222,24 @@ impl Lexer {
                 }
 
                 symbol if self.std_symbols.contains_key(&symbol) => {
+                    let next = self.next_char();
+                    self.position -= 1;
+
+                    if symbol == '.' && next.is_ascii_alphabetic() {
+                        let mut id = String::new();
+                        let id_offset = self.position;
+
+                        while self.peek_char().is_ascii_alphanumeric() || ALLOWED_ID_CHARS.contains(&self.peek_char()) {
+                            id.push(self.peek_char());
+                            self.skip_char();
+                        }
+
+                        if !id.is_empty() {
+                            output.push(Token::new(id, TokenType::Identifier, error::position_to_span(id_offset, self.position)));
+                            continue;
+                        }
+                    }
+
                     let mut token = self.std_symbols.get(&symbol).unwrap().clone();
                     token.span = (self.position, token.span.len()).into();
                     
@@ -240,6 +258,35 @@ impl Lexer {
                         src: self.src.clone(),
                         span: error::position_to_span(span_offset, self.position)
                     });
+                }
+
+                id_character if id_character.is_ascii_alphabetic() => {
+                    let mut id = String::new();
+                    let id_offset = self.position;
+
+                    while self.peek_char().is_ascii_alphanumeric() || ALLOWED_ID_CHARS.contains(&self.peek_char()) {
+                        id.push(self.peek_char());
+                        self.skip_char();
+                    }
+
+                    if let Some(keyword) = self.std_keywords.get(&id) {
+                        let mut token = keyword.clone();
+                        token.span = (id_offset, token.span.len()).into();
+
+                        output.push(token);
+
+                        continue;
+                    }
+
+                    if let Some(instruction) = self.std_instructions.get(&id) {
+                        let mut token = instruction.clone();
+                        token.span = (id_offset, token.span.len()).into();
+
+                        output.push(token);
+                        continue;
+                    }
+
+                    output.push(Token::new(id, TokenType::Identifier, error::position_to_span(id_offset, self.position)));
                 }
 
                 unknown_character => {
@@ -608,6 +655,22 @@ mod tests {
                 Token::new(String::from("stack_ptr"), TokenType::AsmConstant, (75, 10).into()),
                 Token::new(String::from("frame_ptr"), TokenType::AsmConstant, (86, 10).into()),
                 Token::new(String::from("mem_ptr"), TokenType::AsmConstant, (97, 8).into()),
+                Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn lexer_keywords_test() {
+        let mut lexer = Lexer::new("test", "section entry ascii");
+        let tokens = lexer.tokenize().unwrap();
+
+        assert_eq!(
+            tokens,
+            [
+                Token::new(String::from("section"), TokenType::Keyword, (0, 7).into()),
+                Token::new(String::from("entry"), TokenType::Keyword, (8, 5).into()),
+                Token::new(String::from("ascii"), TokenType::Keyword, (14, 5).into()),
                 Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
             ]
         );
