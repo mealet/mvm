@@ -23,24 +23,25 @@ pub enum AssemblyError {
         span: SourceSpan
     },
 
-    #[error("Invalid number constant found")]
+    #[error("{error}")]
     #[diagnostic(
         severity(Error),
-        code(mvm::asm::invalid_number),
+        code(mvm::asm::constant_error),
     )]
-    InvalidNumberConstant {
-        const_type: String,
+    InvalidConstant {
+        error: String,
+        label: String,
 
         #[source_code]
         src: Source,
-        #[label("constant type: {const_type}")]
+        #[label("{label}")]
         span: SourceSpan
     },
 
     #[error("Number parser returned an error: {parser_error}")]
     #[diagnostic(
         severity(Error),
-        code(mvm::asm::invalid_number),
+        code(mvm::asm::number_parse_error),
     )]
     ConstantParseError {
         const_type: String,

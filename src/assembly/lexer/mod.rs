@@ -136,6 +136,13 @@ impl Lexer {
         let _ = self.next_char();
     }
 
+    fn skip_to_whitespace(&mut self) {
+        while !self.peek_char().is_ascii_whitespace()
+            || self.peek_char() != '\0' {
+            self.skip_char();
+        }
+    }
+
     fn error(&mut self, error: AssemblyError) {
         self.errors.push(error);
     }
@@ -156,12 +163,61 @@ impl Lexer {
                     }
                 }
 
+                // constant
+                '$' => {
+                    let span_start = self.position;
+                    let after_prefix = self.next_char();
+
+                    match after_prefix {
+                        digit if digit.is_ascii_digit() => {
+                            match self.get_number() {
+                                Ok(mut token) => {
+                                    token.span = (span_start, token.span.len() + 1).into();
+                                    output.push(token);
+                                },
+                                Err(error) => {
+                                    self.error(error);
+                                }
+                            }
+                        },
+
+                        id if after_prefix.is_ascii_alphabetic() => {
+                            todo!()
+                        },
+
+                        _ => {
+                            let err_offset = self.position;
+                            self.skip_to_whitespace();
+
+                            self.error(AssemblyError::InvalidConstant {
+                                error: format!("Undefined constant sequence found after `$` prefix"),
+                                label: format!("ensure that this constant is valid"),
+                                src: self.src.clone(),
+                                span: error::position_to_span(err_offset, self.position - 1)
+                            });
+                        }
+                    }
+                }
+
                 symbol if self.std_symbols.contains_key(&symbol) => {
                     let mut token = self.std_symbols.get(&symbol).unwrap().clone();
                     token.span = (self.position, token.span.len()).into();
                     
                     output.push(token);
                     self.skip_char();
+                }
+
+                digit if digit.is_ascii_digit() => {
+                    let span_offset = self.position;
+
+                    self.skip_to_whitespace();
+
+                    self.error(AssemblyError::InvalidConstant {
+                        error: format!("Numerical constants are not allowed without `$` prefix"),
+                        label: format!("add the `$` prefix before constant here"),
+                        src: self.src.clone(),
+                        span: error::position_to_span(span_offset, self.position - 1)
+                    });
                 }
 
                 unknown_character => {
@@ -226,8 +282,9 @@ impl Lexer {
                 match after_zero {
                     'b' => {
                         if mode != ParseMode::Decimal || !value.is_empty() {
-                            return Err(AssemblyError::InvalidNumberConstant {
-                                const_type: format!("{mode:?}").to_lowercase(),
+                            return Err(AssemblyError::InvalidConstant {
+                                error: format!("Invalid binary number constant found"),
+                                label: format!("detected constant type is: {mode:?}").to_lowercase(),
                                 src: self.src.clone(),
                                 span: error::position_to_span(span_start, self.position)
                             })
@@ -240,8 +297,9 @@ impl Lexer {
 
                     'x' => {
                         if mode != ParseMode::Decimal || !value.is_empty() {
-                            return Err(AssemblyError::InvalidNumberConstant {
-                                const_type: format!("{mode:?}").to_lowercase(),
+                            return Err(AssemblyError::InvalidConstant {
+                                error: format!("Invalid hexadecimal number constant found"),
+                                label: format!("detected constant type is: {mode:?}").to_lowercase(),
                                 src: self.src.clone(),
                                 span: error::position_to_span(span_start, self.position)
                             })
@@ -263,8 +321,9 @@ impl Lexer {
                 '_' => {},
                 '.' => {
                     if mode != ParseMode::Decimal {
-                        return Err(AssemblyError::InvalidNumberConstant {
-                            const_type: format!("{mode:?}").to_lowercase(),
+                        return Err(AssemblyError::InvalidConstant {
+                            error: format!("Invalid floating number constant found"),
+                            label: format!("detected constant type is: {mode:?}").to_lowercase(),
                             src: self.src.clone(),
                             span: error::position_to_span(span_start, self.position)
                         });
@@ -482,6 +541,23 @@ mod tests {
                 Token::new(String::from(","), TokenType::Comma, (1, 1).into()),
                 Token::new(String::from("["), TokenType::LBrack, (2, 1).into()),
                 Token::new(String::from("]"), TokenType::RBrack, (3, 1).into()),
+                Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn lexer_numbers_test() {
+        let mut lexer = Lexer::new("test", "$123 $0xFF $0b1111 $1.23");
+        let tokens = lexer.tokenize().unwrap();
+
+        assert_eq!(
+            tokens,
+            [
+                Token::new(String::from("123"), TokenType::Constant, (0, 4).into()),
+                Token::new(String::from("255"), TokenType::Constant, (5, 5).into()),
+                Token::new(String::from("15"), TokenType::Constant, (11, 7).into()),
+                Token::new(String::from("1.23"), TokenType::Constant, (19, 5).into()),
                 Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
             ]
         );
