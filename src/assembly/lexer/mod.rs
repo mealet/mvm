@@ -161,6 +161,7 @@ impl Lexer {
                     token.span = (self.position, token.span.len()).into();
                     
                     output.push(token);
+                    self.skip_char();
                 }
 
                 unknown_character => {
@@ -467,5 +468,22 @@ mod tests {
         let number_result = lexer.get_number();
 
         assert!(number_result.is_err());
+    }
+
+    #[test]
+    fn lexer_std_symbols_test() {
+        let mut lexer = Lexer::new("test", ".,[]");
+        let tokens = lexer.tokenize().unwrap();
+
+        assert_eq!(
+            tokens,
+            [
+                Token::new(String::from("."), TokenType::CurrentPtr, (0, 1).into()),
+                Token::new(String::from(","), TokenType::Comma, (1, 1).into()),
+                Token::new(String::from("["), TokenType::LBrack, (2, 1).into()),
+                Token::new(String::from("]"), TokenType::RBrack, (3, 1).into()),
+                Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
+            ]
+        );
     }
 }
