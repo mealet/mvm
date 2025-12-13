@@ -19,7 +19,21 @@ pub enum AssemblyError {
 
         #[source_code]
         src: Source,
-        #[label("here")]
+        #[label("unknown character")]
+        span: SourceSpan
+    },
+
+    #[error("Unknown character escape found: '\\{escape}'")]
+    #[diagnostic(
+        severity(Error),
+        code(mvm::asm::unknown_character_escape),
+    )]
+    UnknownCharacterEscape {
+        escape: char,
+
+        #[source_code]
+        src: Source,
+        #[label("unknown character escape")]
         span: SourceSpan
     },
 

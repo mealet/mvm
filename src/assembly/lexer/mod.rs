@@ -221,6 +221,40 @@ impl Lexer {
                     }
                 }
 
+                '"' => {
+                    let mut value = String::new();
+                    let string_offset = self.position;
+
+                    self.skip_char();
+
+                    while self.peek_char() != '"' {
+                        if self.peek_char() == '\\' {
+                            self.skip_char();
+
+                            let character_escape = Self::character_escape(self.peek_char());
+
+                            if let Some(character_escape) = character_escape {
+                                value.push(character_escape);
+                                self.skip_char();
+                                continue;
+                            }
+
+                            self.error(AssemblyError::UnknownCharacterEscape {
+                                escape: self.peek_char(),
+                                src: self.src.clone(),
+                                span: (self.position - 1, 2).into()
+                            })
+                        }
+
+                        value.push(self.peek_char());
+                        self.skip_char();
+                    }
+
+                    self.skip_char(); // skipping the `"` char
+
+                    output.push(Token::new(value, TokenType::StringConstant, error::position_to_span(string_offset, self.position)));
+                }
+
                 symbol if self.std_symbols.contains_key(&symbol) => {
                     let next = self.next_char();
                     self.position -= 1;
@@ -261,7 +295,7 @@ impl Lexer {
                     });
                 }
 
-                id_character if id_character.is_ascii_alphabetic() => {
+                id_character if id_character.is_ascii_alphabetic() || id_character == '_' => {
                     let mut id = String::new();
                     let id_offset = self.position;
 
@@ -704,6 +738,20 @@ mod tests {
             [
                 Token::new(String::from("label:"), TokenType::Label, (0, 6).into()),
                 Token::new(String::from("asd:"), TokenType::Label, (7, 4).into()),
+                Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn lexer_string_test() {
+        let mut lexer = Lexer::new("test", "\"hello\"");
+        let tokens = lexer.tokenize().unwrap();
+
+        assert_eq!(
+            tokens,
+            [
+                Token::new(String::from("hello"), TokenType::StringConstant, (0, 7).into()),
                 Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
             ]
         );
