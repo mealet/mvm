@@ -156,6 +156,13 @@ impl Lexer {
                     }
                 }
 
+                symbol if self.std_symbols.contains_key(&symbol) => {
+                    let mut token = self.std_symbols.get(&symbol).unwrap().clone();
+                    token.span = (self.position, token.span.len()).into();
+                    
+                    output.push(token);
+                }
+
                 unknown_character => {
                     self.error(AssemblyError::UnknownCharacter {
                         character: unknown_character,
