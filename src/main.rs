@@ -29,7 +29,9 @@ fn main() {
                 std::process::exit(1);
             });
 
-            println!("{:?}", tokens);
+            for token in tokens {
+                println!("{:?}", token);
+            }
         },
 
         Some(("run", sub_matches)) => {
