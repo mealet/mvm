@@ -10,7 +10,7 @@ pub use token::{Token, TokenType};
 mod token;
 mod macros;
 
-const ALLOWED_ID_CHARS: [char; 2] = ['_', '.'];
+const ALLOWED_ID_CHARS: [char; 3] = ['_', '.', ':'];
 
 pub struct Lexer {
     src: Source,
@@ -235,7 +235,8 @@ impl Lexer {
                         }
 
                         if !id.is_empty() {
-                            output.push(Token::new(id, TokenType::Identifier, error::position_to_span(id_offset, self.position)));
+                            let token_type = if id.ends_with(":") { TokenType::Label } else { TokenType::Identifier };
+                            output.push(Token::new(id, token_type, error::position_to_span(id_offset, self.position)));
                             continue;
                         }
                     }
@@ -286,7 +287,8 @@ impl Lexer {
                         continue;
                     }
 
-                    output.push(Token::new(id, TokenType::Identifier, error::position_to_span(id_offset, self.position)));
+                    let token_type = if id.ends_with(":") { TokenType::Label } else { TokenType::Identifier };
+                    output.push(Token::new(id, token_type, error::position_to_span(id_offset, self.position)));
                 }
 
                 unknown_character => {
@@ -687,6 +689,21 @@ mod tests {
                 Token::new(String::from("section"), TokenType::Keyword, (0, 7).into()),
                 Token::new(String::from("entry"), TokenType::Keyword, (8, 5).into()),
                 Token::new(String::from("ascii"), TokenType::Keyword, (14, 5).into()),
+                Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn lexer_labels_test() {
+        let mut lexer = Lexer::new("test", "label: asd:");
+        let tokens = lexer.tokenize().unwrap();
+
+        assert_eq!(
+            tokens,
+            [
+                Token::new(String::from("label:"), TokenType::Label, (0, 6).into()),
+                Token::new(String::from("asd:"), TokenType::Label, (7, 4).into()),
                 Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
             ]
         );
