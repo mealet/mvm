@@ -1,6 +1,7 @@
 use super::error::MvmError;
 
 #[repr(u8)]
+#[derive(Debug)]
 pub enum Opcode {
     // ---| System |---
     

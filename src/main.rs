@@ -35,7 +35,28 @@ fn main() {
         },
 
         Some(("run", sub_matches)) => {
-            todo!()
+            let memsize = sub_matches.get_one::<String>("MEMSIZE").expect("no memsize found");
+            let stacksize = sub_matches.get_one::<String>("STACKSIZE").expect("no stacksize found");
+            let log_mode = match sub_matches.get_one::<String>("LOG") {
+                Some(str) => str == "true",
+                _ => false
+            };
+
+            let program_path = sub_matches.get_one::<String>("PROGRAM").expect("no program path found");
+            let program = std::fs::read(program_path).expect("unable to read program");
+
+            let memsize = memsize.parse::<usize>().expect("unable to parse memsize");
+            let stacksize = stacksize.parse::<usize>().expect("unable to parse memsize");
+
+            let mut vm = vm::VM::new(memsize, stacksize).unwrap_or_else(|err| {
+                eprintln!("{}", err);
+                std::process::exit(1);
+            });
+
+            vm.insert_program(&program);
+            vm.run();
+
+            dbg!(vm.memory.inner);
         }
 
         _ => unreachable!()
