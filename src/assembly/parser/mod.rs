@@ -111,12 +111,27 @@ impl<'tokens> Parser<'tokens> {
         let expr_offset = self.peek_token().span.offset();
         let current = self.peek_token().clone();
 
-        dbg!(&current);
-
         match current.token_type {
             TokenType::Identifier => {
                 self.skip_token();
                 return Expression::LabelRef(current.value, current.span);
+            }
+
+            TokenType::Constant => {
+                self.skip_token();
+
+                let value = current.value.parse::<u64>().unwrap_or_else(|err| {
+                    self.error(AssemblyError::ConstantParseError {
+                        const_type: format!("u64"),
+                        parser_error: err.to_string(),
+                        src: self.src.clone(),
+                        span: current.span
+                    });
+
+                    0
+                });
+
+                return Expression::UIntConstant(value, current.span)
             }
 
             TokenType::Instruction => {
