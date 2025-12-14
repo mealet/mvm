@@ -55,8 +55,6 @@ fn main() {
 
             vm.insert_program(&program);
             vm.run();
-
-            dbg!(vm.memory.inner);
         }
 
         _ => unreachable!()
