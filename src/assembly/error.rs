@@ -9,6 +9,8 @@ pub fn position_to_span(from: usize, to: usize) -> SourceSpan {
 
 #[derive(Debug, Error, Diagnostic)]
 pub enum AssemblyError {
+    // Lexer Errors
+
     #[error("Unknown character found: '{character}'")]
     #[diagnostic(
         severity(Error),
@@ -65,5 +67,22 @@ pub enum AssemblyError {
         src: Source,
         #[label("constant type: {const_type}")]
         span: SourceSpan
-    }
+    },
+
+    // Parser Errors
+    
+    #[error("expected `{expected}` token, but found `{found}`")]
+    #[diagnostic(
+        severity(Error),
+        code(mvm::asm::unexpected_token),
+    )]
+    UnexpectedToken {
+        expected: String,
+        found: String,
+
+        #[source_code]
+        src: Source,
+        #[label("this token expected to be `{expected}`")]
+        span: SourceSpan
+    },
 }
