@@ -19,6 +19,7 @@ pub struct Lexer {
     std_symbols: HashMap<char, Token>,
     std_keywords: HashMap<String, Token>,
     std_constants: HashMap<String, Token>,
+    std_registers: HashMap<String, Token>,
     std_instructions: HashMap<String, Token>,
 
     input: Vec<char>,
@@ -50,22 +51,25 @@ impl Lexer {
                 macros::std_keyword!("entry"),
                 macros::std_keyword!("ascii"),
             ]),
+            std_registers: HashMap::from([
+                macros::std_reg!("r0"),
+                macros::std_reg!("r1"),
+                macros::std_reg!("r2"),
+                macros::std_reg!("r3"),
+                macros::std_reg!("r4"),
+                macros::std_reg!("r5"),
+                macros::std_reg!("r6"),
+                macros::std_reg!("r7"),
+                macros::std_reg!("r8"),
+                macros::std_reg!("call"),
+                macros::std_reg!("accumulator"),
+                macros::std_reg!("instruction_ptr"),
+                macros::std_reg!("stack_ptr"),
+                macros::std_reg!("frame_ptr"),
+                macros::std_reg!("mem_ptr"),
+            ]),
             std_constants: HashMap::from([
-                macros::std_constant!("r0"),
-                macros::std_constant!("r1"),
-                macros::std_constant!("r2"),
-                macros::std_constant!("r3"),
-                macros::std_constant!("r4"),
-                macros::std_constant!("r5"),
-                macros::std_constant!("r6"),
-                macros::std_constant!("r7"),
-                macros::std_constant!("r8"),
                 macros::std_constant!("syscall"),
-                macros::std_constant!("accumulator"),
-                macros::std_constant!("instruction_ptr"),
-                macros::std_constant!("stack_ptr"),
-                macros::std_constant!("frame_ptr"),
-                macros::std_constant!("mem_ptr"),
             ]),
             std_instructions: HashMap::from([
                 macros::std_instruction!("halt"),
@@ -186,7 +190,7 @@ impl Lexer {
                         },
 
                         id if after_prefix.is_ascii_alphabetic() => {
-                            let mut id= String::new();
+                            let mut id = String::new();
                             let id_offset = self.position;
 
                             while self.peek_char().is_ascii_alphanumeric() || ALLOWED_ID_CHARS.contains(&self.peek_char()) {
@@ -222,6 +226,36 @@ impl Lexer {
                         }
                     }
                 }
+
+                // register
+                '%' => {
+                    let span_start = self.position;
+
+                    self.skip_char();
+
+                    let mut id = String::new();
+                    let id_offset = self.position;
+
+                    while self.peek_char().is_ascii_alphanumeric() || ALLOWED_ID_CHARS.contains(&self.peek_char()) {
+                        id.push(self.peek_char());
+                        self.skip_char();
+                    }
+
+                    if let Some(token) = self.std_registers.get(&id) {
+                        let mut token = token.clone();
+                        token.span = (span_start, token.span.len() + 1).into();
+
+                        output.push(token);
+                    } else {
+                        self.error(AssemblyError::InvalidConstant {
+                            error: format!("Assembly register \"{id}\" not found"),
+                            label: format!("verify this identifier"),
+                            src: self.src.clone(),
+                            span: error::position_to_span(id_offset, self.position)
+                        });
+                    }
+                }
+
 
                 '"' => {
                     let mut value = String::new();
@@ -673,28 +707,28 @@ mod tests {
     }
 
     #[test]
-    fn lexer_named_constants_test() {
-        let mut lexer = Lexer::new("test", "$r0 $r1 $r2 $r3 $r4 $r5 $r6 $r7 $r8 $syscall $accumulator $instruction_ptr $stack_ptr $frame_ptr $mem_ptr");
+    fn lexer_registers_constants_test() {
+        let mut lexer = Lexer::new("test", "%r0 %r1 %r2 %r3 %r4 %r5 %r6 %r7 %r8 %call %accumulator %instruction_ptr %stack_ptr %frame_ptr %mem_ptr");
         let tokens = lexer.tokenize().unwrap();
 
         assert_eq!(
             tokens,
             [
-                Token::new(String::from("r0"), TokenType::AsmConstant, (0, 3).into()),
-                Token::new(String::from("r1"), TokenType::AsmConstant, (4, 3).into()),
-                Token::new(String::from("r2"), TokenType::AsmConstant, (8, 3).into()),
-                Token::new(String::from("r3"), TokenType::AsmConstant, (12, 3).into()),
-                Token::new(String::from("r4"), TokenType::AsmConstant, (16, 3).into()),
-                Token::new(String::from("r5"), TokenType::AsmConstant, (20, 3).into()),
-                Token::new(String::from("r6"), TokenType::AsmConstant, (24, 3).into()),
-                Token::new(String::from("r7"), TokenType::AsmConstant, (28, 3).into()),
-                Token::new(String::from("r8"), TokenType::AsmConstant, (32, 3).into()),
-                Token::new(String::from("syscall"), TokenType::AsmConstant, (36, 8).into()),
-                Token::new(String::from("accumulator"), TokenType::AsmConstant, (45, 12).into()),
-                Token::new(String::from("instruction_ptr"), TokenType::AsmConstant, (58, 16).into()),
-                Token::new(String::from("stack_ptr"), TokenType::AsmConstant, (75, 10).into()),
-                Token::new(String::from("frame_ptr"), TokenType::AsmConstant, (86, 10).into()),
-                Token::new(String::from("mem_ptr"), TokenType::AsmConstant, (97, 8).into()),
+                Token::new(String::from("r0"), TokenType::AsmReg, (0, 3).into()),
+                Token::new(String::from("r1"), TokenType::AsmReg, (4, 3).into()),
+                Token::new(String::from("r2"), TokenType::AsmReg, (8, 3).into()),
+                Token::new(String::from("r3"), TokenType::AsmReg, (12, 3).into()),
+                Token::new(String::from("r4"), TokenType::AsmReg, (16, 3).into()),
+                Token::new(String::from("r5"), TokenType::AsmReg, (20, 3).into()),
+                Token::new(String::from("r6"), TokenType::AsmReg, (24, 3).into()),
+                Token::new(String::from("r7"), TokenType::AsmReg, (28, 3).into()),
+                Token::new(String::from("r8"), TokenType::AsmReg, (32, 3).into()),
+                Token::new(String::from("call"), TokenType::AsmReg, (36, 5).into()),
+                Token::new(String::from("accumulator"), TokenType::AsmReg, (42, 12).into()),
+                Token::new(String::from("instruction_ptr"), TokenType::AsmReg, (55, 16).into()),
+                Token::new(String::from("stack_ptr"), TokenType::AsmReg, (72, 10).into()),
+                Token::new(String::from("frame_ptr"), TokenType::AsmReg, (83, 10).into()),
+                Token::new(String::from("mem_ptr"), TokenType::AsmReg, (94, 8).into()),
                 Token::new(String::from(""), TokenType::EOF, (0, 0).into()),
             ]
         );

@@ -31,7 +31,17 @@ macro_rules! std_constant {
     };
 }
 
+macro_rules! std_reg {
+    ($name: literal) => {
+        (
+            $name.to_string(),
+            Token::new($name.to_string(), TokenType::AsmReg, (0, $name.len()).into()),
+        )
+    };
+}
+
 pub(crate) use std_symbol;
 pub(crate) use std_keyword;
 pub(crate) use std_constant;
 pub(crate) use std_instruction;
+pub(crate) use std_reg;
