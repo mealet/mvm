@@ -37,3 +37,9 @@ pub enum TokenType {
     EOF,            // end of file
     Undefined,      // undefined token type
 }
+
+impl std::fmt::Display for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
