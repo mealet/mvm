@@ -43,7 +43,10 @@ pub enum Expression {
 
     UIntConstant(u64, SourceSpan),
     StringConstant(String, SourceSpan),
+
     AsmConstant(String, SourceSpan),
+    AsmReg(String, SourceSpan),
+
     LabelRef(String, SourceSpan),
     CurrentPtr(SourceSpan),
 
@@ -63,6 +66,7 @@ impl Expression {
             Expression::UIntConstant(_, span) => *span,
             Expression::StringConstant(_, span) => *span,
             Expression::AsmConstant(_, span) => *span,
+            Expression::AsmReg(_, span) => *span,
             Expression::LabelRef(_, span) => *span,
             Expression::CurrentPtr(span) => *span,
             Expression::None => (0, 0).into()

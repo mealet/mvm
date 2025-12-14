@@ -137,8 +137,15 @@ impl<'tokens> Parser<'tokens> {
             TokenType::AsmConstant => {
                 self.skip_token();
 
-                let value = current.value.strip_prefix("%").unwrap_or(current.value.as_str());
+                let value = current.value.strip_prefix("$").unwrap_or(current.value.as_str());
                 return Expression::AsmConstant(value.to_string(), current.span);
+            }
+
+            TokenType::AsmReg => {
+                self.skip_token();
+
+                let value = current.value.strip_prefix("%").unwrap_or(current.value.as_str());
+                return Expression::AsmReg(value.to_string(), current.span);
             }
 
             TokenType::Instruction => {
@@ -428,8 +435,8 @@ mod tests {
                 Expression::Instruction {
                     name: String::from("mov"),
                     args: vec![
-                        Expression::AsmConstant(String::from("r0"), (4, "%r0".len()).into()),
-                        Expression::UIntConstant(80, (9, "$80".len()).into())
+                        Expression::AsmReg(String::from("r0"), (4, "%r0".len()).into()),
+                        Expression::UIntConstant(123, (9, "$123".len()).into())
                     ],
                     span: (
                         0,
