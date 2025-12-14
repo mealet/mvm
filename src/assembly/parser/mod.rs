@@ -134,6 +134,13 @@ impl<'tokens> Parser<'tokens> {
                 return Expression::UIntConstant(value, current.span)
             }
 
+            TokenType::AsmConstant => {
+                self.skip_token();
+
+                let value = current.value.strip_prefix("%").unwrap_or(current.value.as_str());
+                return Expression::AsmConstant(value.to_string(), current.span);
+            }
+
             TokenType::Instruction => {
                 let mut args = Vec::new();
 
@@ -233,7 +240,201 @@ mod tests {
             [
                 Expression::SectionDef {
                     id: String::from(".data"),
-                    span: (0, 13).into()
+                    span: (
+                        0,
+                        "section .data".len()
+                    ).into()
+                }
+            ]
+        );
+    }
+
+    #[test]
+    fn parser_entry_def_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "entry _start";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        assert_eq!(
+            ast,
+            [
+                Expression::EntryDef {
+                    label: String::from("_start"),
+                    span: (
+                        0,
+                        "entry _start".len()
+                    ).into()
+                }
+            ]
+        );
+    }
+
+    #[test]
+    fn parser_label_def_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "label_def:";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        assert_eq!(
+            ast,
+            [
+                Expression::LabelDef {
+                    id: String::from("label_def"),
+                    span: (
+                        0,
+                        "label_def:".len()
+                    ).into()
+                }
+            ]
+        );
+    }
+
+    #[test]
+    fn parser_directive_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "ascii \"hello\"";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        assert_eq!(
+            ast,
+            [
+                Expression::Directive {
+                    directive: String::from("ascii"),
+                    args: vec![
+                        Expression::StringConstant(
+                            String::from("hello"),
+                            (6, "hello".len()).into()
+                        )
+                    ],
+                    span: (
+                        0,
+                        CODE.len()
+                    ).into()
+                }
+            ]
+        );
+    }
+
+    #[test]
+    fn parser_comptime_expr_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "[. + $1]";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        assert_eq!(
+            ast,
+            [
+                Expression::ComptimeExpr {
+                    expr: Box::new(Expression::BinaryExpr {
+                        op: String::from("+"),
+                        lhs: Box::new(Expression::CurrentPtr((1, 1).into())),
+                        rhs: Box::new(Expression::UIntConstant(1, (5, 2).into())),
+                        span: (1, ". + 1".len()).into()
+                    }),
+                    span: (
+                        0,
+                        CODE.len()
+                    ).into()
+                }
+            ]
+        );
+    }
+
+    #[test]
+    fn parser_instr_no_args_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "halt";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        assert_eq!(
+            ast,
+            [
+                Expression::Instruction {
+                    name: String::from("halt"),
+                    args: Vec::new(),
+                    span: (0, 4).into()
+                }
+            ]
+        );
+    }
+
+    #[test]
+    fn parser_instr_1_arg_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "int $80";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        assert_eq!(
+            ast,
+            [
+                Expression::Instruction {
+                    name: String::from("int"),
+                    args: vec![
+                        Expression::UIntConstant(80, (4, "$80".len()).into())
+                    ],
+                    span: (
+                        0,
+                        CODE.len()
+                    ).into()
+                }
+            ]
+        );
+    }
+
+    #[test]
+    fn parser_instr_2_arg_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "mov %r0, $123";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        assert_eq!(
+            ast,
+            [
+                Expression::Instruction {
+                    name: String::from("mov"),
+                    args: vec![
+                        Expression::AsmConstant(String::from("r0"), (4, "%r0".len()).into()),
+                        Expression::UIntConstant(80, (9, "$80".len()).into())
+                    ],
+                    span: (
+                        0,
+                        CODE.len()
+                    ).into()
                 }
             ]
         );
@@ -253,7 +454,7 @@ mod tests {
         assert_eq!(
             ast,
             [
-                Expression::LabelRef(String::from("label_ref"), (0, 9).into())
+                Expression::LabelRef(String::from("label_ref"), (0, "label_ref".len()).into())
             ]
         );
     }
