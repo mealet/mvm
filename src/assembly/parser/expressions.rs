@@ -1,6 +1,6 @@
 use miette::SourceSpan;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     SectionDef {
         id: String,
@@ -45,6 +45,9 @@ pub enum Expression {
     StringConstant(String, SourceSpan),
     AsmConstant(String, SourceSpan),
     LabelRef(String, SourceSpan),
+    CurrentPtr(SourceSpan),
+
+    None,
 }
 
 impl Expression {
@@ -60,7 +63,9 @@ impl Expression {
             Expression::UIntConstant(_, span) => *span,
             Expression::StringConstant(_, span) => *span,
             Expression::AsmConstant(_, span) => *span,
-            Expression::LabelRef(_, span) => *span
+            Expression::LabelRef(_, span) => *span,
+            Expression::CurrentPtr(span) => *span,
+            Expression::None => (0, 0).into()
         }
     }
 }

@@ -85,4 +85,18 @@ pub enum AssemblyError {
         #[label("this token expected to be `{expected}`")]
         span: SourceSpan
     },
+
+    #[error("{error}")]
+    #[diagnostic(
+        severity(Error),
+        code(mvm::asm::unexpected_token),
+    )]
+    UnknownExpression {
+        error: String,
+
+        #[source_code]
+        src: Source,
+        #[label("verify this token")]
+        span: SourceSpan
+    }
 }
