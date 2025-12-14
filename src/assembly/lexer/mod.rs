@@ -140,7 +140,7 @@ impl Lexer {
 
     fn skip_to_whitespace(&mut self) {
         while !self.peek_char().is_whitespace()
-            || self.peek_char() != '\0' {
+            && self.peek_char() != '\0' {
             self.skip_char();
         }
     }
@@ -157,6 +157,8 @@ impl Lexer {
         while !self.is_eof() {
             match self.peek_char() {
                 chr if chr.is_whitespace() || ['\n', '\r'].contains(&chr) => self.skip_char(),
+
+                '\0' => break,
 
                 // comment
                 ';' => {
@@ -287,11 +289,13 @@ impl Lexer {
 
                     self.skip_to_whitespace();
 
+                    let span_end = if self.peek_char() == ' ' { self.position } else { self.position - 1 };
+
                     self.error(AssemblyError::InvalidConstant {
                         error: format!("Numerical constants are not allowed without `$` prefix"),
                         label: format!("add the `$` prefix before constant here"),
                         src: self.src.clone(),
-                        span: error::position_to_span(span_offset, self.position)
+                        span: error::position_to_span(span_offset, span_end)
                     });
                 }
 
