@@ -1,6 +1,6 @@
 ; Hello World Example
 ; %call = %r9
-; $syscall = $0x80
+; $syscall = $80
 
 section .data
   hello:
@@ -27,6 +27,6 @@ _start:
 
 exit:
   ; -- syscall void exit(int status) --
-  mov %r0 $0 ; int status
-  mov %call $0 ; `exit` syscall
+  mov %r0, $0 ; int status
+  mov %call, $0 ; `exit` syscall
   int $syscall ; system call interrupt
