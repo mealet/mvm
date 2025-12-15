@@ -134,6 +134,12 @@ impl<'tokens> Parser<'tokens> {
                 return Expression::UIntConstant(value, current.span)
             }
 
+            TokenType::StringConstant => {
+                self.skip_token();
+
+                return Expression::StringConstant(current.value, current.span)
+            }
+
             TokenType::AsmConstant => {
                 self.skip_token();
 
@@ -214,6 +220,11 @@ impl<'tokens> Parser<'tokens> {
 
                     _ => unimplemented!()
                 }
+            }
+
+            TokenType::CurrentPtr => {
+                self.skip_token();
+                return Expression::CurrentPtr(current.span);
             }
 
             TokenType::EOF => {
@@ -448,6 +459,84 @@ mod tests {
     }
 
     #[test]
+    fn parser_uint_constant_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "$123";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        assert_eq!(
+            ast,
+            [
+                Expression::UIntConstant(123, (0, 4).into())
+            ]
+        );
+    }
+
+    #[test]
+    fn parser_string_constant_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "\"hello, world!\"";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        assert_eq!(
+            ast,
+            [
+                Expression::StringConstant(String::from("hello, world!"), (0, CODE.len()).into())
+            ]
+        );
+    }
+
+    #[test]
+    fn parser_asm_constant_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "$syscall";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        assert_eq!(
+            ast,
+            [
+                Expression::AsmConstant(String::from("syscall"), (0, CODE.len()).into())
+            ]
+        );
+    }
+
+    #[test]
+    fn parser_asm_reg_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "%r0 %accumulator %call";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        assert_eq!(
+            ast,
+            [
+                Expression::AsmReg(String::from("r0"), (0, 3).into()),
+                Expression::AsmReg(String::from("accumulator"), (4, 12).into()),
+                Expression::AsmReg(String::from("call"), (17, 5).into()),
+            ]
+        );
+    }
+
+    #[test]
     fn parser_label_ref_test() {
         const FILENAME: &str = "test";
         const CODE: &str = "label_ref";
@@ -462,6 +551,25 @@ mod tests {
             ast,
             [
                 Expression::LabelRef(String::from("label_ref"), (0, "label_ref".len()).into())
+            ]
+        );
+    }
+
+    #[test]
+    fn parser_current_ptr_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = ".";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        assert_eq!(
+            ast,
+            [
+                Expression::CurrentPtr((0, 1).into())
             ]
         );
     }
