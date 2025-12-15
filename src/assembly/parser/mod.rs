@@ -107,7 +107,7 @@ impl<'tokens> Parser<'tokens> {
 }
 
 impl<'tokens> Parser<'tokens> {
-    fn expression(&mut self) -> Expression {
+    fn term(&mut self) -> Expression {
         let expr_offset = self.peek_token().span.offset();
         let current = self.peek_token().clone();
 
@@ -115,7 +115,7 @@ impl<'tokens> Parser<'tokens> {
             TokenType::Identifier => {
                 self.skip_token();
                 return Expression::LabelRef(current.value, current.span);
-            }
+            },
 
             TokenType::Constant => {
                 self.skip_token();
@@ -132,107 +132,183 @@ impl<'tokens> Parser<'tokens> {
                 });
 
                 return Expression::UIntConstant(value, current.span)
-            }
+            },
 
             TokenType::StringConstant => {
                 self.skip_token();
 
                 return Expression::StringConstant(current.value, current.span)
-            }
+            },
 
             TokenType::AsmConstant => {
                 self.skip_token();
 
                 let value = current.value.strip_prefix("$").unwrap_or(current.value.as_str());
                 return Expression::AsmConstant(value.to_string(), current.span);
-            }
+            },
 
             TokenType::AsmReg => {
                 self.skip_token();
 
                 let value = current.value.strip_prefix("%").unwrap_or(current.value.as_str());
                 return Expression::AsmReg(value.to_string(), current.span);
-            }
-
-            TokenType::Instruction => {
-                let mut args = Vec::new();
-
-                self.skip_token();
-
-                match current.value.as_str() {
-                    // no arguments instructions
-                    "halt" | "ret" => {
-                        return Expression::Instruction {
-                            name: current.value,
-                            args,
-                            span: current.span
-                        }
-                    }
-
-                    // 1 argument instructions
-                    "call" | "int" | "push8" | "push16" | "push32" |
-                    "push64" | "pop8" | "pop16" | "pop32" | "pop64" |
-                    "jmp" | "jz" | "jnz" => {
-                        let last_arg = self.expression();
-                        let last_arg_span = last_arg.get_span();
-
-                        args.push(last_arg);
-
-                        return Expression::Instruction {
-                            name: current.value,
-                            args,
-                            span: error::position_to_span(
-                                current.span.offset(),
-                                (last_arg_span.offset() + last_arg_span.len())
-                            )
-                        }
-                    }
-
-                    // 2 argument instructions
-                    "mov" | "frame8" | "frame16" | "frame32" | "frame64" |
-                    "peek8" | "peek16" | "peek32" | "peek64" | "add" | "xadd" |
-                    "sub" | "mul" | "div" | "cmp" | "je" | "jne" => {
-                        args.push(self.expression());
-
-                        if let Err(err) = self.skip_expected(TokenType::Comma) {
-                            self.error(err);
-
-                            self.skip_token();
-                            self.skip_token();
-
-                            return Expression::None;
-                        }
-
-                        let last_arg = self.expression();
-                        let last_arg_span = last_arg.get_span();
-
-                        args.push(last_arg);
-
-                        return Expression::Instruction {
-                            name: current.value,
-                            args,
-                            span: error::position_to_span(
-                                current.span.offset(),
-                                (last_arg_span.offset() + last_arg_span.len())
-                            )
-                        };
-                    }
-
-                    _ => unimplemented!()
-                }
-            }
+            },
 
             TokenType::CurrentPtr => {
                 self.skip_token();
                 return Expression::CurrentPtr(current.span);
             }
 
+            _ => Expression::None
+        }
+    }
+
+    fn expression(&mut self) -> Expression {
+        let expr_offset = self.peek_token().span.offset();
+        let node = self.term();
+
+        let current = self.peek_token().clone();
+
+        if let Expression::None = node {
+            return match current.token_type {
+                TokenType::Instruction => {
+                    let mut args = Vec::new();
+
+                    self.skip_token();
+
+                    match current.value.as_str() {
+                        // no arguments instructions
+                        "halt" | "ret" => {
+                            return Expression::Instruction {
+                                name: current.value,
+                                args,
+                                span: current.span
+                            }
+                        }
+
+                        // 1 argument instructions
+                        "call" | "int" | "push8" | "push16" | "push32" |
+                        "push64" | "pop8" | "pop16" | "pop32" | "pop64" |
+                        "jmp" | "jz" | "jnz" => {
+                            let last_arg = self.expression();
+                            let last_arg_span = last_arg.get_span();
+
+                            args.push(last_arg);
+
+                            return Expression::Instruction {
+                                name: current.value,
+                                args,
+                                span: error::position_to_span(
+                                    current.span.offset(),
+                                    (last_arg_span.offset() + last_arg_span.len())
+                                )
+                            }
+                        }
+
+                        // 2 argument instructions
+                        "mov" | "frame8" | "frame16" | "frame32" | "frame64" |
+                        "peek8" | "peek16" | "peek32" | "peek64" | "add" | "xadd" |
+                        "sub" | "mul" | "div" | "cmp" | "je" | "jne" => {
+                            args.push(self.expression());
+
+                            if let Err(err) = self.skip_expected(TokenType::Comma) {
+                                self.error(err);
+
+                                self.skip_token();
+                                self.skip_token();
+
+                                return Expression::None;
+                            }
+
+                            let last_arg = self.expression();
+                            let last_arg_span = last_arg.get_span();
+
+                            args.push(last_arg);
+
+                            return Expression::Instruction {
+                                name: current.value,
+                                args,
+                                span: error::position_to_span(
+                                    current.span.offset(),
+                                    (last_arg_span.offset() + last_arg_span.len())
+                                )
+                            };
+                        }
+
+                        _ => unimplemented!()
+                    }
+                }
+
+                TokenType::LBrack => {
+                    let expr_start = self.position;
+                    self.skip_token();
+
+                    let expr = self.expression();
+                    let expr_length = expr.get_span().len() + 2;
+
+                    self.skip_expected(TokenType::RBrack);
+
+                    return Expression::ComptimeExpr {
+                        expr: Box::new(expr),
+                        span: (expr_start, expr_length).into()
+                    }
+                },
+
+                TokenType::EOF => {
+                    self.eof = true;
+                    Expression::None
+                },
+
+                _ => {
+                    self.skip_token();
+
+                    self.error(AssemblyError::UnknownExpression {
+                        error: format!("Unknown expression found"),
+                        src: self.src.clone(),
+                        span: current.span
+                    });
+
+                    Expression::None
+                }
+            }
+        }
+
+        // expressions with non-none nodes
+
+        match current.token_type {
+            TokenType::Operator => {
+                if !BINARY_OPERATORS.contains(&current.value.as_str()) {
+                    self.error(AssemblyError::UnsupportedExpression {
+                        error: format!("Unsupported expression with operator found"),
+                        label: format!("operator {} is not supported", current.value),
+                        src: self.src.clone(),
+                        span: current.span
+                    });
+                }
+
+                let op = current.value;
+                self.skip_token();
+
+                let lhs = Box::new(node);
+                let rhs = Box::new(self.expression());
+
+                let rhs_span = rhs.get_span();
+                let span_end = rhs_span.offset() + rhs_span.len();
+
+                return Expression::BinaryExpr {
+                    op,
+                    lhs,
+                    rhs,
+                    span: error::position_to_span(expr_offset, span_end)
+                };
+            }
+
             TokenType::EOF => {
                 self.eof = true;
-                Expression::None
+                node
             },
 
-            _ => todo!(),
+            _ => node
         }
     }
 }

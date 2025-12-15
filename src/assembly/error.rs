@@ -98,5 +98,21 @@ pub enum AssemblyError {
         src: Source,
         #[label("verify this token")]
         span: SourceSpan
+    },
+
+
+    #[error("{error}")]
+    #[diagnostic(
+        severity(Error),
+        code(mvm::asm::unexpected_token),
+    )]
+    UnsupportedExpression {
+        error: String,
+        label: String,
+
+        #[source_code]
+        src: Source,
+        #[label("{label}")]
+        span: SourceSpan
     }
 }

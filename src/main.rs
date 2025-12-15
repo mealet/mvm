@@ -17,7 +17,7 @@ fn main() {
 
             let reporter = miette::GraphicalReportHandler::new();
 
-            let mut lexer = assembly::lexer::Lexer::new("TEST", code);
+            let mut lexer = assembly::lexer::Lexer::new("TEST", &code);
             let tokens = lexer.tokenize().unwrap_or_else(|errors| {
                 for err in errors {
                     let mut buffer = String::new();
@@ -29,9 +29,10 @@ fn main() {
                 std::process::exit(1);
             });
 
-            for token in tokens {
-                println!("{:?}", token);
-            }
+            let mut parser = assembly::parser::Parser::new("TEST", &code, &tokens);
+            let ast = parser.parse().unwrap();
+
+            println!("{:#?}", ast);
         },
 
         Some(("run", sub_matches)) => {
