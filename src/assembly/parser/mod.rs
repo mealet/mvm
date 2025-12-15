@@ -373,7 +373,7 @@ impl<'tokens> Parser<'tokens> {
                     });
                 }
 
-                let op = current.value;
+                let op = current.value.clone();
                 self.skip_token();
 
                 let lhs = Box::new(node);
@@ -381,6 +381,36 @@ impl<'tokens> Parser<'tokens> {
 
                 let rhs_span = rhs.get_span();
                 let span_end = rhs_span.offset() + rhs_span.len();
+
+                if PRIORITY_BINARY_OPERATORS.contains(&op.as_str()) {
+                    let new_node = rhs.clone();
+                    let old_lhs = lhs.clone();
+
+                    if let Expression::BinaryExpr {
+                        op,
+                        lhs,
+                        rhs,
+                        span,
+                    } = *new_node
+                    {
+                        let lhs_new = old_lhs;
+                        let rhs_new = lhs;
+
+                        let priority_node = Expression::BinaryExpr {
+                            op: current.value,
+                            lhs: lhs_new,
+                            rhs: rhs_new,
+                            span,
+                        };
+
+                        return Expression::BinaryExpr {
+                            op,
+                            lhs: Box::new(priority_node),
+                            rhs,
+                            span: error::position_to_span(expr_offset, span_end),
+                        };
+                    }
+                }
 
                 return Expression::BinaryExpr {
                     op,
