@@ -14,6 +14,7 @@ pub struct Analyzer {
 
     section: Section,
     labels: HashMap<String, SourceSpan>,
+    labels_analyzed: bool,
 }
 
 #[derive(Debug, PartialEq)]
@@ -42,10 +43,19 @@ impl Analyzer {
             errors: Vec::new(),
             section: Section::None,
             labels: HashMap::new(),
+            labels_analyzed: false
         }
     }
 
     pub fn analyze(&mut self, ast: &[Expression]) -> Result<(), &[AssemblyError]> {
+        // analyzing all labels definitions
+        ast
+            .into_iter()
+            .filter(|expr| matches!(expr, Expression::LabelDef { .. }))
+            .for_each(|expr| self.visit_expression(expr));
+
+        self.labels_analyzed = true;
+
         ast.into_iter().for_each(|expr| self.visit_expression(expr));
 
         if !self.errors.is_empty() {
@@ -99,6 +109,8 @@ impl Analyzer {
             }
 
             Expression::LabelDef { id, span } => {
+                if self.labels_analyzed { return };
+
                 if let Some(original_span) = self.labels.get(id) {
                     self.error(AssemblyError::LabelRedefinition {
                         name: id.clone(),
