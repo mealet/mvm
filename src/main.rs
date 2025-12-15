@@ -41,7 +41,17 @@ fn main() {
                 std::process::exit(1);
             });
 
-            println!("{:#?}", ast);
+            let mut analyzer = assembly::semantic::Analyzer::new("TEST", &code);
+            let _ = analyzer.analyze(&ast).unwrap_or_else(|errors| {
+                for err in errors {
+                    let mut buffer = String::new();
+                    reporter.render_report(&mut buffer, err);
+
+                    eprintln!("{}", buffer);
+                }
+
+                std::process::exit(1);
+            });
         },
 
         Some(("run", sub_matches)) => {

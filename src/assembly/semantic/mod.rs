@@ -63,6 +63,15 @@ impl Analyzer {
             Expression::SectionDef { id, span } => {
                 match Section::try_from(id.as_str()) {
                     Ok(section) => {
+                        if self.section == Section::Text {
+                            self.error(AssemblyError::InvalidSectionPlacement {
+                                label: format!("section `{}` must be placed before `.text`", id),
+                                src: self.src.clone(),
+                                span: *span
+                            });
+                            return;
+                        }
+
                         if self.section == Section::None
                         && section == Section::Text {
                             self.error(AssemblyError::InvalidSectionPlacement {
@@ -72,15 +81,8 @@ impl Analyzer {
                             });
                             return;
                         }
-                        
-                        if self.section == Section::Text {
-                            self.error(AssemblyError::InvalidSectionPlacement {
-                                label: format!("section `{}` must be placed before `.text`", id),
-                                src: self.src.clone(),
-                                span: *span
-                            });
-                            return;
-                        }
+
+                        self.section = section;
                     },
                     Err(_) => {
                         self.error(AssemblyError::UnknownSection {
@@ -93,7 +95,7 @@ impl Analyzer {
                 }
             }
 
-            _ => todo!()
+            _ => {}
         }
     }
 }
