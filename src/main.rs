@@ -30,7 +30,16 @@ fn main() {
             });
 
             let mut parser = assembly::parser::Parser::new("TEST", &code, &tokens);
-            let ast = parser.parse().unwrap();
+            let ast = parser.parse().unwrap_or_else(|errors| {
+                for err in errors {
+                    let mut buffer = String::new();
+                    reporter.render_report(&mut buffer, err);
+
+                    eprintln!("{}", buffer);
+                }
+
+                std::process::exit(1);
+            });
 
             println!("{:#?}", ast);
         },
