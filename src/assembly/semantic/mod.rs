@@ -108,6 +108,16 @@ impl Analyzer {
                 }
             }
 
+            Expression::EntryDef { label, span } => {
+                if !self.labels.contains_key(label) {
+                    self.error(AssemblyError::UnknownLabel {
+                        name: label.clone(),
+                        src: self.src.clone(),
+                        span: *span
+                    });
+                }
+            }
+
             Expression::LabelDef { id, span } => {
                 if self.labels_analyzed { return };
 

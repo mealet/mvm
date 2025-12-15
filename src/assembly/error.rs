@@ -162,4 +162,18 @@ pub enum AssemblyError {
         #[label("`{name}` first declared here")]
         original: SourceSpan,
     },
+
+    #[error("Label `{name}` is not defined")]
+    #[diagnostic(
+        severity(Error),
+        code(mvm::asm::unexpected_token),
+    )]
+    UnknownLabel {
+        name: String,
+
+        #[source_code]
+        src: Source,
+        #[label("could not find `{name}` label")]
+        span: SourceSpan
+    }
 }
