@@ -315,6 +315,17 @@ impl<'tokens> Parser<'tokens> {
                     }
                 }
 
+                TokenType::Label => {
+                    self.skip_token();
+
+                    let value = current.value.strip_suffix(":").unwrap_or(&current.value);
+
+                    return Expression::LabelDef {
+                        id: value.to_string(),
+                        span: current.span
+                    }
+                }
+
                 TokenType::LBrack => {
                     let expr_start = self.position;
                     self.skip_token();
