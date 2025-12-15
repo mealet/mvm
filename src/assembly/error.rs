@@ -145,4 +145,21 @@ pub enum AssemblyError {
         #[label("{label}")]
         span: SourceSpan
     },
+
+    #[error("Label `{name}` is already defined in code")]
+    #[diagnostic(
+        severity(Error),
+        code(mvm::asm::unexpected_token),
+    )]
+    LabelRedefinition {
+        name: String,
+
+        #[source_code]
+        src: Source,
+        #[label(primary, "this label is already defined")]
+        redefinition: SourceSpan,
+
+        #[label("`{name}` first declared here")]
+        original: SourceSpan,
+    },
 }

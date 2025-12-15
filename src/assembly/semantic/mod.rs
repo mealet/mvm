@@ -4,7 +4,8 @@ use super::{
     error::{self, AssemblyError},
 };
 
-use miette::NamedSource;
+use miette::{NamedSource, SourceSpan};
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct Analyzer {
@@ -12,6 +13,7 @@ pub struct Analyzer {
     errors: Vec<AssemblyError>,
 
     section: Section,
+    labels: HashMap<String, SourceSpan>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -39,6 +41,7 @@ impl Analyzer {
             src: NamedSource::new(filename, source.as_ref().to_owned()),
             errors: Vec::new(),
             section: Section::None,
+            labels: HashMap::new(),
         }
     }
 
@@ -93,6 +96,20 @@ impl Analyzer {
                         return;
                     }
                 }
+            }
+
+            Expression::LabelDef { id, span } => {
+                if let Some(original_span) = self.labels.get(id) {
+                    self.error(AssemblyError::LabelRedefinition {
+                        name: id.clone(),
+                        src: self.src.clone(),
+                        redefinition: *span,
+                        original: *original_span
+                    });
+                    return;
+                }
+
+                self.labels.insert(id.clone(), *span);
             }
 
             _ => {}
