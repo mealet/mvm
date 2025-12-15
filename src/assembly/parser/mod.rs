@@ -239,6 +239,82 @@ impl<'tokens> Parser<'tokens> {
                     }
                 }
 
+                TokenType::Keyword => {
+                    match current.value.as_str() {
+                        "section" => {
+                            let identifier = self.next_token().clone();
+
+                            if !self.expect(TokenType::Identifier) {
+                                self.error(AssemblyError::UnexpectedToken {
+                                    expected: TokenType::Identifier.to_string().to_lowercase(),
+                                    found: identifier.token_type.to_string().to_lowercase(),
+                                    src: self.src.clone(),
+                                    span: identifier.span
+                                });
+                                self.skip_token();
+                                return Expression::None;
+                            }
+                            
+                            self.skip_token();
+                            let span_end = identifier.span.offset() + identifier.span.len();
+
+                            return Expression::SectionDef {
+                                id: identifier.value,
+                                span: error::position_to_span(expr_offset, span_end)
+                            }
+                        },
+                        "entry" => {
+                            let identifier = self.next_token().clone();
+
+                            if !self.expect(TokenType::Identifier) {
+                                self.error(AssemblyError::UnexpectedToken {
+                                    expected: TokenType::Identifier.to_string().to_lowercase(),
+                                    found: identifier.token_type.to_string().to_lowercase(),
+                                    src: self.src.clone(),
+                                    span: identifier.span
+                                });
+                                self.skip_token();
+                                return Expression::None;
+                            }
+                            
+                            self.skip_token();
+                            let span_end = identifier.span.offset() + identifier.span.len();
+
+                            return Expression::EntryDef {
+                                label: identifier.value,
+                                span: error::position_to_span(expr_offset, span_end)
+                            }
+                        },
+                        "ascii" => {
+                            let str_constant = self.next_token().clone();
+
+                            if !self.expect(TokenType::StringConstant) {
+                                self.error(AssemblyError::UnexpectedToken {
+                                    expected: TokenType::StringConstant.to_string().to_lowercase(),
+                                    found: str_constant.token_type.to_string().to_lowercase(),
+                                    src: self.src.clone(),
+                                    span: str_constant.span
+                                });
+                                self.skip_token();
+                                return Expression::None;
+                            }
+
+                            self.skip_token();
+                            let span_end = str_constant.span.offset() + str_constant.span.len();
+
+                            return Expression::Directive {
+                                directive: String::from("ascii"),
+                                args: vec![
+                                    Expression::StringConstant(str_constant.value, str_constant.span)
+                                ],
+                                span: error::position_to_span(expr_offset, span_end)
+                            }
+                        },
+
+                        _ => unimplemented!()
+                    }
+                }
+
                 TokenType::LBrack => {
                     let expr_start = self.position;
                     self.skip_token();
@@ -394,7 +470,7 @@ mod tests {
     }
 
     #[test]
-    fn parser_directive_test() {
+    fn parser_ascii_directive_test() {
         const FILENAME: &str = "test";
         const CODE: &str = "ascii \"hello\"";
 
@@ -412,7 +488,7 @@ mod tests {
                     args: vec![
                         Expression::StringConstant(
                             String::from("hello"),
-                            (6, "hello".len()).into()
+                            (6, "\"hello\"".len()).into()
                         )
                     ],
                     span: (
@@ -443,7 +519,7 @@ mod tests {
                         op: String::from("+"),
                         lhs: Box::new(Expression::CurrentPtr((1, 1).into())),
                         rhs: Box::new(Expression::UIntConstant(1, (5, 2).into())),
-                        span: (1, ". + 1".len()).into()
+                        span: (1, ". + $1".len()).into()
                     }),
                     span: (
                         0,
