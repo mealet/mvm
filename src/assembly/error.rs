@@ -114,5 +114,35 @@ pub enum AssemblyError {
         src: Source,
         #[label("{label}")]
         span: SourceSpan
-    }
+    },
+
+    // Semantic Errors
+
+    #[error("Unknown section definition found")]
+    #[diagnostic(
+        severity(Error),
+        code(mvm::asm::unexpected_token),
+    )]
+    UnknownSection {
+        name: String,
+
+        #[source_code]
+        src: Source,
+        #[label("section `{name}` is invalid")]
+        span: SourceSpan
+    },
+
+    #[error("Section placement is invalid")]
+    #[diagnostic(
+        severity(Error),
+        code(mvm::asm::unexpected_token),
+    )]
+    InvalidSectionPlacement {
+        label: String,
+
+        #[source_code]
+        src: Source,
+        #[label("{label}")]
+        span: SourceSpan
+    },
 }
