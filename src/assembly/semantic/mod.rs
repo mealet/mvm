@@ -134,6 +134,16 @@ impl Analyzer {
                 self.labels.insert(id.clone(), *span);
             }
 
+            Expression::LabelRef(label_name, span) => {
+                if !self.labels.contains_key(label_name) {
+                    self.error(AssemblyError::UnknownLabel {
+                        name: label_name.clone(),
+                        src: self.src.clone(),
+                        span: *span
+                    });
+                }
+            }
+
             _ => {}
         }
     }
