@@ -244,6 +244,42 @@ impl Analyzer {
                         }
                     },
 
+                    "add" | "sub" | "mul" | "div" | "cmp" => {
+                        let dest = args.get(0).unwrap();
+                        let src = args.get(1).unwrap();
+
+                        macros::assert_arg!(self, "register", dest, Expression::AsmReg(_, _));
+
+                        if !matches!(src, Expression::UIntConstant(_, _) | Expression::AsmReg(_, _) | Expression::LabelRef(_, _)) {
+                            self.error(AssemblyError::InvalidArgument {
+                                label: format!("this expected to be number/register/label"),
+                                src: self.src.clone(),
+                                span: src.get_span()
+                            });
+                        }
+                    }
+
+                    "xadd" => {
+                        let dest = args.get(0).unwrap();
+                        let src = args.get(1).unwrap();
+
+                        macros::assert_arg!(self, "register", dest, Expression::AsmReg(_, _));
+                        macros::assert_arg!(self, "register", src, Expression::AsmReg(_, _));
+                    },
+
+                    "jmp" | "jz" | "jnz" => {
+                        let label = args.get(0).unwrap();
+                        macros::assert_arg!(self, "label", label, Expression::LabelRef(_, _));
+                    },
+
+                    "je" | "jne" => {
+                        let value = args.get(0).unwrap();
+                        let label = args.get(1).unwrap();
+
+                        macros::assert_arg!(self, "u64", value, Expression::UIntConstant(_, _));
+                        macros::assert_arg!(self, "label", label, Expression::LabelRef(_, _));
+                    }
+
                     _ => unimplemented!(),
                 }
             }
