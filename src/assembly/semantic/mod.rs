@@ -114,6 +114,14 @@ impl Analyzer {
             }
 
             Expression::EntryDef { label, span } => {
+                if self.section != Section::Text {
+                    self.error(AssemblyError::NotAllowed {
+                        label: format!("entry label must be placed in `.text` section"),
+                        src: self.src.clone(),
+                        span: *span
+                    });
+                }
+
                 if !self.labels.contains_key(label) {
                     self.error(AssemblyError::UnknownLabel {
                         name: label.clone(),
