@@ -22,7 +22,7 @@ pub struct Analyzer {
 }
 
 #[derive(Debug, PartialEq)]
-enum Section {
+pub enum Section {
     Data,
     Text,
     None
