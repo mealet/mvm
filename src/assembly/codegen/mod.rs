@@ -90,6 +90,33 @@ impl Codegen {
                 self.labels.insert(id.to_owned(), Label::new(self.pc));
             }
 
+            Expression::Directive { directive, args, span: _ } => {
+                match directive.as_str() {
+                    "ascii" => {
+                        assert_eq!(args.len(), 1);
+
+                        if let Some(Expression::StringConstant(string, _)) = args.get(0) {
+                            let str_bytes = string.bytes();
+                            let addr_bytes = self.pc.to_be_bytes();
+
+                            self.push_byte(addr_bytes[0]);
+                            self.push_byte(addr_bytes[1]);
+                            self.push_byte(addr_bytes[2]);
+                            self.push_byte(addr_bytes[3]);
+
+                            self.push_byte(addr_bytes[4]);
+                            self.push_byte(addr_bytes[5]);
+                            self.push_byte(addr_bytes[6]);
+                            self.push_byte(addr_bytes[7]);
+
+                            str_bytes.for_each(|byte| self.push_byte(byte));
+                        }
+                    },
+
+                    _ => unimplemented!()
+                }
+            }
+
             Expression::LabelRef(label, _) => {
                 self.labels_refs.insert(self.pc, label.to_owned());
 
