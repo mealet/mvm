@@ -39,6 +39,11 @@ impl Codegen {
 
         &self.output
     }
+
+    fn push_byte(&mut self, byte: u8) {
+        self.pc += 1;
+        self.output.push(byte);
+    }
 }
 
 impl Codegen {
@@ -48,22 +53,38 @@ impl Codegen {
                 self.labels.insert(id.to_owned(), Label::new(self.pc));
             }
 
+            Expression::EntryDef { label, span: _ } => {
+                self.push_byte(0xFF);
+
+                self.labels_refs.insert(self.pc, label.to_owned());
+
+                // 64 bit address number
+
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+            }
+
             Expression::LabelRef(label, _) => {
                 self.labels_refs.insert(self.pc, label.to_owned());
 
                 // 64 bit address number
 
-                self.output.push(0);
-                self.output.push(0);
-                self.output.push(0);
-                self.output.push(0);
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
 
-                self.output.push(0);
-                self.output.push(0);
-                self.output.push(0);
-                self.output.push(0);
-
-                self.pc += 8;
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
             }
 
             _ => unimplemented!()
@@ -114,5 +135,25 @@ mod tests {
         assert_eq!(codegen.labels.get("label"), Some(&Label::new(0)));
         assert_eq!(codegen.pc, 8);
         assert_eq!(codegen.output, [0,0,0,0, 0,0,0,0]);
+    }
+
+    #[test]
+    fn codegen_entry_def_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "entry _start";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        let mut codegen = Codegen::new();
+
+        codegen.compile_expr(&ast[0]);
+
+        assert_eq!(codegen.labels_refs.get(&1), Some(&String::from("_start")));
+        assert_eq!(codegen.pc, 9);
+        assert_eq!(codegen.output, [0xFF, 0,0,0,0, 0,0,0,0]);
     }
 }
