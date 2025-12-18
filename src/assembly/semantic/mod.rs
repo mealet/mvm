@@ -14,7 +14,9 @@ pub struct Analyzer {
 
     section: Section,
     labels: HashMap<String, SourceSpan>,
+
     labels_analyzed: bool,
+    comptime_mode: bool,
 }
 
 #[derive(Debug, PartialEq)]
@@ -43,7 +45,8 @@ impl Analyzer {
             errors: Vec::new(),
             section: Section::None,
             labels: HashMap::new(),
-            labels_analyzed: false
+            labels_analyzed: false,
+            comptime_mode: false,
         }
     }
 
@@ -155,6 +158,56 @@ impl Analyzer {
                 }
             }
 
+            Expression::ComptimeExpr { expr, span } => {
+                let prev_mode = self.comptime_mode;
+                self.comptime_mode = true;
+
+                self.visit_expression(expr);
+
+                self.comptime_mode = prev_mode;
+            }
+
+            Expression::Instruction { name, args, span } => {
+                todo!()
+            }
+
+            Expression::BinaryExpr { op, lhs, rhs, span } => {
+                if !self.comptime_mode {
+                    self.error(AssemblyError::ComptimeException {
+                        error: String::from("Usage of comptime expression without compile time mode"),
+                        label: format!("binary expressions are allowed only in compile time mode: \"[EXPR]\""),
+                        src: self.src.clone(),
+                        span: *span
+                    });
+                    return;
+                }
+
+                self.visit_expression(lhs);
+                self.visit_expression(rhs);
+            }
+
+            Expression::UIntConstant(_, _) => {},
+            Expression::StringConstant(_, span) => {
+                self.error(AssemblyError::NotAllowed {
+                    label: String::from("string constants are not allowed without directives"),
+                    src: self.src.clone(),
+                    span: *span
+                })
+            },
+
+            Expression::AsmConstant(_, _) => {},
+            Expression::AsmReg(_, span) => {
+                if self.comptime_mode {
+                    self.error(AssemblyError::ComptimeException {
+                        error: String::from("Runtime element found in compile time mode"),
+                        label: String::from("registers values are unknown at compile time"),
+                        src: self.src.clone(),
+                        span: *span
+                    });
+                    return;
+                }
+            }
+
             Expression::LabelRef(label_name, span) => {
                 if !self.labels.contains_key(label_name) {
                     self.error(AssemblyError::UnknownLabel {
@@ -162,6 +215,19 @@ impl Analyzer {
                         src: self.src.clone(),
                         span: *span
                     });
+                    return;
+                }
+            }
+
+            Expression::CurrentPtr(span) => {
+                if !self.comptime_mode {
+                    self.error(AssemblyError::ComptimeException {
+                        error: String::from("Usage of comptime expression without compile time mode"),
+                        label: format!("current pointer is allowed only in comptime expression: \"[EXPR]\""),
+                        src: self.src.clone(),
+                        span: *span
+                    });
+                    return;
                 }
             }
 

@@ -190,5 +190,34 @@ pub enum AssemblyError {
         src: Source,
         #[label("{label}")]
         span: SourceSpan
+    },
+
+    #[error("{error}")]
+    #[diagnostic(
+        severity(Error),
+        code(mvm::asm::comptime_exception),
+    )]
+    ComptimeException {
+        error: String,
+        label: String,
+
+        #[source_code]
+        src: Source,
+        #[label("{label}")]
+        span: SourceSpan
+    },
+
+    #[error("This action is not allowed semantically")]
+    #[diagnostic(
+        severity(Error),
+        code(mvm::asm::not_allowed),
+    )]
+    NotAllowed {
+        label: String,
+
+        #[source_code]
+        src: Source,
+        #[label("{label}")]
+        span: SourceSpan
     }
 }
