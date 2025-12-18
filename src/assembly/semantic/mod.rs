@@ -170,6 +170,8 @@ impl Analyzer {
             }
 
             Expression::Instruction { name, args, span } => {
+                // arguments lengths are verified in parser
+
                 match name.as_str() {
                     "call" => macros::assert_arg!(self, "label", args.get(0).unwrap(), Expression::LabelRef(_, _)),
                     "int" => {
@@ -214,6 +216,33 @@ impl Analyzer {
                             span: dest.get_span()
                         });
                     }
+
+                    "push8" | "push16" | "push32" | "push64" => macros::assert_arg!(self, "register", args.get(0).unwrap(), Expression::AsmReg(_, _)),
+                    "pop8" | "pop16" | "pop32" | "pop64" => macros::assert_arg!(self, "register", args.get(0).unwrap(), Expression::AsmReg(_, _)),
+
+                    "frame8" | "frame16" | "frame32" | "frame64" => {
+                        let dest = args.get(0).unwrap();
+                        let address = args.get(1).unwrap();
+
+                        macros::assert_arg!(self, "register", dest, Expression::AsmReg(_, _));
+                        macros::assert_arg!(self, "u16", address, Expression::UIntConstant(_, _));
+
+                        if let Expression::UIntConstant(value, span) = address {
+                            macros::verify_boundary!(self, *value, *span, u16);
+                        }
+                    },
+
+                    "peek8" | "peek16" | "peek32" | "peek64" => {
+                        let dest = args.get(0).unwrap();
+                        let address = args.get(1).unwrap();
+
+                        macros::assert_arg!(self, "register", dest, Expression::AsmReg(_, _));
+                        macros::assert_arg!(self, "u16", address, Expression::UIntConstant(_, _));
+
+                        if let Expression::UIntConstant(value, span) = address {
+                            macros::verify_boundary!(self, *value, *span, u16);
+                        }
+                    },
 
                     _ => unreachable!(),
                 }
