@@ -219,5 +219,19 @@ pub enum AssemblyError {
         src: Source,
         #[label("{label}")]
         span: SourceSpan
-    }
+    },
+
+    #[error("Instruction argument is invalid")]
+    #[diagnostic(
+        severity(Error),
+        code(mvm::asm::invalid_argument),
+    )]
+    InvalidArgument {
+        label: String,
+
+        #[source_code]
+        src: Source,
+        #[label("{label}")]
+        span: SourceSpan
+    },
 }

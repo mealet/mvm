@@ -7,6 +7,8 @@ use super::{
 use miette::{NamedSource, SourceSpan};
 use std::collections::HashMap;
 
+mod macros;
+
 #[derive(Debug)]
 pub struct Analyzer {
     src: Source,
@@ -168,7 +170,19 @@ impl Analyzer {
             }
 
             Expression::Instruction { name, args, span } => {
-                todo!()
+                match name.as_str() {
+                    "call" => macros::assert_arg!(self, "label", args.get(0).unwrap(), Expression::LabelRef(_, _)),
+                    "int" => {
+                        let arg = args.get(0).unwrap();
+
+                        macros::assert_arg!(self, "u8", arg, Expression::UIntConstant(_, _));
+
+                        if let Expression::UIntConstant(value, span) = arg {
+                            macros::verify_boundary!(self, *value, *span, u8);
+                        }
+                    },
+                    _ => unreachable!(),
+                }
             }
 
             Expression::BinaryExpr { op, lhs, rhs, span } => {
