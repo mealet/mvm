@@ -177,7 +177,7 @@ impl Analyzer {
                     "int" => {
                         let arg = args.get(0).unwrap();
 
-                        macros::assert_arg!(self, "u8", arg, Expression::UIntConstant(_, _));
+                        macros::assert_arg!(self, "u8", arg, Expression::UIntConstant(_, _) | Expression::AsmConstant(_, _));
 
                         if let Expression::UIntConstant(value, span) = arg {
                             macros::verify_boundary!(self, *value, *span, u8);
@@ -192,9 +192,9 @@ impl Analyzer {
 
                         // mov %reg, ...
                         if matches!(dest, Expression::AsmReg(_, _)) {
-                            if !matches!(src, Expression::UIntConstant(_, _) | Expression::AsmReg(_, _)) {
+                            if !matches!(src, Expression::UIntConstant(_, _) | Expression::AsmReg(_, _) | Expression::LabelRef(_, _)) {
                                 self.error(AssemblyError::InvalidArgument {
-                                    label: format!("this expected to be number/register"),
+                                    label: format!("this expected to be number/register/label"),
                                     src: self.src.clone(),
                                     span: src.get_span()
                                 });
@@ -244,7 +244,7 @@ impl Analyzer {
                         }
                     },
 
-                    _ => unreachable!(),
+                    _ => unimplemented!(),
                 }
             }
 
