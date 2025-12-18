@@ -88,8 +88,31 @@ mod tests {
         let ast = parser.parse().unwrap();
 
         let mut codegen = Codegen::new();
-        let code = codegen.compile_expr(&ast[0]);
+        codegen.compile_expr(&ast[0]);
 
         assert_eq!(codegen.labels.get("label_def"), Some(&Label::new(0)));
+        assert_eq!(codegen.pc, 0);
+        assert!(codegen.output.is_empty());
+    }
+
+    #[test]
+    fn codegen_label_ref_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "label: label";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        let mut codegen = Codegen::new();
+
+        codegen.compile_expr(&ast[0]);
+        codegen.compile_expr(&ast[1]);
+
+        assert_eq!(codegen.labels.get("label"), Some(&Label::new(0)));
+        assert_eq!(codegen.pc, 8);
+        assert_eq!(codegen.output, [0,0,0,0, 0,0,0,0]);
     }
 }
