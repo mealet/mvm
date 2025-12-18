@@ -64,6 +64,10 @@ impl Codegen {
 
     fn compile_expr(&mut self, expr: &Expression) {
         match expr {
+            Expression::SectionDef { id, span: _ } => {
+                self.data_section = id == ".data";
+            }
+
             Expression::EntryDef { label, span: _ } => {
                 self.push_byte(0xFF);
 
@@ -103,6 +107,22 @@ impl Codegen {
             }
 
             Expression::UIntConstant(value, _) => {
+                if self.data_section {
+                    let value_bytes = value.to_be_bytes();
+
+                    self.push_byte(value_bytes[0]);
+                    self.push_byte(value_bytes[1]);
+                    self.push_byte(value_bytes[2]);
+                    self.push_byte(value_bytes[3]);
+
+                    self.push_byte(value_bytes[4]);
+                    self.push_byte(value_bytes[5]);
+                    self.push_byte(value_bytes[6]);
+                    self.push_byte(value_bytes[7]);
+
+                    return;
+                }
+
                 let constant = Constant::new(*value);
                 self.add_constant(value.to_string(), constant);
 
