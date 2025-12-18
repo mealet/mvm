@@ -181,6 +181,40 @@ impl Analyzer {
                             macros::verify_boundary!(self, *value, *span, u8);
                         }
                     },
+
+                    "mov" => {
+                        assert!(args.len() == 2);
+
+                        let dest = args.get(0).unwrap();
+                        let src = args.get(1).unwrap();
+
+                        // mov %reg, ...
+                        if matches!(dest, Expression::AsmReg(_, _)) {
+                            if !matches!(src, Expression::UIntConstant(_, _) | Expression::AsmReg(_, _)) {
+                                self.error(AssemblyError::InvalidArgument {
+                                    label: format!("this expected to be number/register"),
+                                    src: self.src.clone(),
+                                    span: src.get_span()
+                                });
+                            }
+
+                            return;
+                        }
+                        
+                        // mov address, ...
+                        if matches!(dest, Expression::UIntConstant(_, _) | Expression::LabelRef(_, _)) {
+                            macros::assert_arg!(self, "register", src, Expression::AsmReg(_, _));
+
+                            return;
+                        }
+
+                        self.error(AssemblyError::InvalidArgument {
+                            label: format!("destination expected to be register/address"),
+                            src: self.src.clone(),
+                            span: dest.get_span()
+                        });
+                    }
+
                     _ => unreachable!(),
                 }
             }
