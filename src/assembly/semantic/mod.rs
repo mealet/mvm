@@ -134,6 +134,27 @@ impl Analyzer {
                 self.labels.insert(id.clone(), *span);
             }
 
+            Expression::Directive { directive, args, span } => {
+                match directive.as_str() {
+                    "ascii" => {
+                        // this arguments must be verified in parser
+                        assert!(args.len() == 1);
+                        assert!(matches!(args.get(0), Some(Expression::StringConstant(_, _))));
+
+                        if self.section != Section::Data {
+                            self.error(AssemblyError::InvalidDirective {
+                                name: directive.to_owned(),
+                                label: format!("must be placed in `.data` section"),
+                                src: self.src.clone(),
+                                span: *span
+                            })
+                        }
+                    },
+
+                    _ => unreachable!()
+                }
+            }
+
             Expression::LabelRef(label_name, span) => {
                 if !self.labels.contains_key(label_name) {
                     self.error(AssemblyError::UnknownLabel {

@@ -104,7 +104,7 @@ pub enum AssemblyError {
     #[error("{error}")]
     #[diagnostic(
         severity(Error),
-        code(mvm::asm::unexpected_token),
+        code(mvm::asm::unsupported_expression),
     )]
     UnsupportedExpression {
         error: String,
@@ -121,7 +121,7 @@ pub enum AssemblyError {
     #[error("Unknown section definition found")]
     #[diagnostic(
         severity(Error),
-        code(mvm::asm::unexpected_token),
+        code(mvm::asm::unknown_section),
     )]
     UnknownSection {
         name: String,
@@ -135,7 +135,7 @@ pub enum AssemblyError {
     #[error("Section placement is invalid")]
     #[diagnostic(
         severity(Error),
-        code(mvm::asm::unexpected_token),
+        code(mvm::asm::invalid_section_placement),
     )]
     InvalidSectionPlacement {
         label: String,
@@ -149,7 +149,7 @@ pub enum AssemblyError {
     #[error("Label `{name}` is already defined in code")]
     #[diagnostic(
         severity(Error),
-        code(mvm::asm::unexpected_token),
+        code(mvm::asm::label_redefinition),
     )]
     LabelRedefinition {
         name: String,
@@ -166,7 +166,7 @@ pub enum AssemblyError {
     #[error("Label `{name}` is not defined")]
     #[diagnostic(
         severity(Error),
-        code(mvm::asm::unexpected_token),
+        code(mvm::asm::unknown_label),
     )]
     UnknownLabel {
         name: String,
@@ -174,6 +174,21 @@ pub enum AssemblyError {
         #[source_code]
         src: Source,
         #[label("could not find `{name}` label")]
+        span: SourceSpan
+    },
+
+    #[error("Directive `{name}` usage is invalid")]
+    #[diagnostic(
+        severity(Error),
+        code(mvm::asm::invalid_directive),
+    )]
+    InvalidDirective {
+        name: String,
+        label: String,
+
+        #[source_code]
+        src: Source,
+        #[label("{label}")]
         span: SourceSpan
     }
 }
