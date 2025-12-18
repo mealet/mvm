@@ -1,5 +1,5 @@
+pub use isa::Opcode;
 use memory::MemoryBuffer;
-use isa::Opcode;
 use error::MvmError;
 use execution::*;
 

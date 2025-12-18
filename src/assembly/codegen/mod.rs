@@ -1,9 +1,10 @@
 mod structs;
 
 use super::parser::expressions::Expression;
+use crate::vm::Opcode;
 
 use std::collections::HashMap;
-use structs::Label;
+use structs::{Label, Constant};
 
 pub struct Codegen {
     pc: u64,
@@ -11,8 +12,9 @@ pub struct Codegen {
     labels: HashMap<String, Label>,
     labels_refs: HashMap<u64, String>,
 
-    data_section: Vec<u8>,
-    data_constants: HashMap<String, u64>,
+    data_section: bool,
+    constants: HashMap<String, Constant>,
+    constants_refs: HashMap<u64, String>,
 
     output: Vec<u8>
 }
@@ -25,8 +27,9 @@ impl Codegen {
             labels: HashMap::new(),
             labels_refs: HashMap::new(),
 
-            data_section: Vec::new(),
-            data_constants: HashMap::new(),
+            data_section: false,
+            constants: HashMap::new(),
+            constants_refs: HashMap::new(),
             
             output: Vec::new()
         }
@@ -39,20 +42,28 @@ impl Codegen {
 
         &self.output
     }
+}
 
+impl Codegen {
     fn push_byte(&mut self, byte: u8) {
         self.pc += 1;
         self.output.push(byte);
     }
-}
 
-impl Codegen {
-    fn compile_expr(&mut self, expr: &Expression) {
-        match expr {
-            Expression::LabelDef { id, span: _ } => {
-                self.labels.insert(id.to_owned(), Label::new(self.pc));
+    fn add_constant(&mut self, id: String, constant: Constant) {
+        if let Some(prev) = self.constants.get(&id) {
+            if prev < &constant {
+                self.constants.insert(id, constant);
             }
 
+            return;
+        }
+
+        self.constants.insert(id, constant);
+    }
+
+    fn compile_expr(&mut self, expr: &Expression) {
+        match expr {
             Expression::EntryDef { label, span: _ } => {
                 self.push_byte(0xFF);
 
@@ -71,8 +82,31 @@ impl Codegen {
                 self.push_byte(0);
             }
 
+            Expression::LabelDef { id, span: _ } => {
+                self.labels.insert(id.to_owned(), Label::new(self.pc));
+            }
+
             Expression::LabelRef(label, _) => {
                 self.labels_refs.insert(self.pc, label.to_owned());
+
+                // 64 bit address number
+
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+            }
+
+            Expression::UIntConstant(value, _) => {
+                let constant = Constant::new(*value);
+                self.add_constant(value.to_string(), constant);
+
+                self.constants_refs.insert(self.pc, value.to_string());
 
                 // 64 bit address number
 
@@ -155,5 +189,25 @@ mod tests {
         assert_eq!(codegen.labels_refs.get(&1), Some(&String::from("_start")));
         assert_eq!(codegen.pc, 9);
         assert_eq!(codegen.output, [0xFF, 0,0,0,0, 0,0,0,0]);
+    }
+
+    #[test]
+    fn codegen_constant_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "$123";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        let mut codegen = Codegen::new();
+
+        codegen.compile_expr(&ast[0]);
+
+        assert_eq!(codegen.constants.get("123"), Some(&Constant::U8(123)));
+        assert_eq!(codegen.constants_refs.get(&0), Some(&String::from("123")));
+        assert_eq!(codegen.pc, 8);
     }
 }
