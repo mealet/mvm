@@ -117,21 +117,9 @@ impl Codegen {
                 }
             }
 
-            Expression::LabelRef(label, _) => {
-                self.labels_refs.insert(self.pc, label.to_owned());
-
-                // 64 bit address number
-
-                self.push_byte(0);
-                self.push_byte(0);
-                self.push_byte(0);
-                self.push_byte(0);
-
-                self.push_byte(0);
-                self.push_byte(0);
-                self.push_byte(0);
-                self.push_byte(0);
-            }
+            Expression::ComptimeExpr { expr, span: _ } => todo!(),
+            Expression::Instruction { name, args, span: _ } => todo!(),
+            Expression::BinaryExpr { op, lhs, rhs, span } => todo!(),
 
             Expression::UIntConstant(value, _) => {
                 if self.data_section {
@@ -168,8 +156,33 @@ impl Codegen {
                 self.push_byte(0);
             }
 
+            Expression::LabelRef(label, _) => {
+                self.labels_refs.insert(self.pc, label.to_owned());
+
+                // 64 bit address number
+
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+                self.push_byte(0);
+            }
+
+            Expression::StringConstant(_, _) => unreachable!(),
+
+            Expression::AsmConstant(_, _) => todo!(),
+            Expression::AsmReg(_, _) => todo!(),
+
+            Expression::CurrentPtr(_) => todo!(),
+
             _ => unimplemented!()
         }
+
+
     }
 }
 
