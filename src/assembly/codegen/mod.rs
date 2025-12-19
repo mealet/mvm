@@ -95,7 +95,7 @@ impl Codegen {
             }
         }
 
-        let text_section = if let Some(pos) = self.output.windows(2).position(|w| w[0] == 0xFF && w[1] == Opcode::TextSection as u8) {
+        let mut text_section = if let Some(pos) = self.output.windows(2).position(|w| w[0] == 0xFF && w[1] == Opcode::TextSection as u8) {
             self.output.split_off(pos)
         } else {
             Vec::new()
@@ -128,7 +128,41 @@ impl Codegen {
             labels.insert(id, Label::new(ptr, label.data_section));
         }
 
-        // resolving labels
+        // merging data and text section
+
+        self.output.append(&mut text_section);
+
+        // resolving labels & constants refs in code
+
+        for (ptr, id) in constants_refs {
+            let const_ptr = relative_constants_pointers.get(id).expect("something went wrong with relative const ptrs");
+            let const_bytes = const_ptr.to_be_bytes();
+
+            self.output[ptr as usize + 0] = const_bytes[0];
+            self.output[ptr as usize + 1] = const_bytes[1];
+            self.output[ptr as usize + 2] = const_bytes[2];
+            self.output[ptr as usize + 3] = const_bytes[3];
+
+            self.output[ptr as usize + 4] = const_bytes[4];
+            self.output[ptr as usize + 5] = const_bytes[5];
+            self.output[ptr as usize + 6] = const_bytes[6];
+            self.output[ptr as usize + 7] = const_bytes[7];
+        }
+
+        for (ptr, id) in labels_refs {
+            let label = labels.get(id).expect("something went wrong with labels resolver");
+            let label_bytes = label.ptr.to_be_bytes();
+
+            self.output[ptr as usize + 0] = label_bytes[0];
+            self.output[ptr as usize + 1] = label_bytes[1];
+            self.output[ptr as usize + 2] = label_bytes[2];
+            self.output[ptr as usize + 3] = label_bytes[3];
+
+            self.output[ptr as usize + 4] = label_bytes[4];
+            self.output[ptr as usize + 5] = label_bytes[5];
+            self.output[ptr as usize + 6] = label_bytes[6];
+            self.output[ptr as usize + 7] = label_bytes[7];
+        }
 
         &self.output
     }
