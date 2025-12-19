@@ -662,12 +662,14 @@ impl Codegen {
             Expression::StringConstant(_, _) => unreachable!(),
 
             Expression::AsmConstant(name, _) => {
-                match name.as_str() {
-                    "syscall" => {
-                        self.push_byte(80);
-                    }
+                let const_value = match name.as_str() {
+                    "syscall" => 80,
                     _ => unreachable!()
-                }
+                };
+
+                self.compile_expr(
+                    &Expression::UIntConstant(80, (0, 0).into())
+                );
             },
             Expression::AsmReg(name, _) => {
                 const REGISTERS_INDEXES: [&str; 15] = [
