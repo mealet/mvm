@@ -80,7 +80,11 @@ fn main() {
             });
 
             vm.insert_program(&program);
-            vm.run();
+            let result = vm.run();
+
+            if result.is_err() {
+                println!("{}", result.unwrap_err());
+            }
         }
 
         _ => unreachable!()
