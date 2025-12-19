@@ -132,7 +132,43 @@ impl Codegen {
                 self.push_byte(bytes[7]);
             },
 
-            Expression::Instruction { name, args, span: _ } => todo!(),
+            Expression::Instruction { name, args, span: _ } => {
+                match name.as_str() {
+                    "mov" => {
+                        // mov %dest, ...
+                        if let Some(Expression::AsmReg(_, _)) = args.get(0) {
+
+                            match args.get(1) {
+                                Some(Expression::UIntConstant(value, _)) => {
+                                    let constant = Constant::new(*value);
+
+                                    match constant {
+                                        Constant::U8(_) => self.push_byte(Opcode::Mov8 as u8),
+                                        Constant::U16(_) => self.push_byte(Opcode::Mov16 as u8),
+                                        Constant::U32(_) => self.push_byte(Opcode::Mov32 as u8),
+                                        Constant::U64(_) => self.push_byte(Opcode::Mov64 as u8),
+                                    }
+
+                                    self.compile_expr(args.get(0).unwrap());
+                                    self.compile_expr(args.get(1).unwrap());
+                                }
+
+                                Some(Expression::AsmReg(_, _)) => {
+                                    self.push_byte(Opcode::MovR2R as u8);
+                                    self.compile_expr(args.get(0).unwrap());
+                                    self.compile_expr(args.get(1).unwrap());
+                                }
+
+                                _ => unreachable!()
+                            }
+
+                            return;
+                        }
+                    }
+
+                    _ => unimplemented!()
+                }
+            },
             Expression::BinaryExpr { op, lhs, rhs, span } => unreachable!(),
 
             Expression::UIntConstant(value, _) => {
@@ -435,5 +471,26 @@ mod tests {
 
         assert_eq!(codegen.pc, 8);
         assert_eq!(codegen.output, [0, 0, 0, 0, 0, 0, 0, 1]);
+    }
+
+    #[test]
+    fn codegen_mov_expr_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "mov %r0, $123";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        let mut codegen = Codegen::new();
+
+        for ref expr in ast {
+            codegen.compile_expr(expr);
+        }
+
+        assert_eq!(codegen.pc, 1 + 1 + 8);
+        assert_eq!(codegen.output, [Opcode::Mov8 as u8, 0, /* address */ 0,0,0,0, 0,0,0,0 ]);
     }
 }
