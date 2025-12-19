@@ -1,6 +1,4 @@
 ; Hello World Example
-; %call = %r9
-; $syscall = $80
 
 section .data
   hello:
