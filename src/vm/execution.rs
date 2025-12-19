@@ -10,6 +10,8 @@ impl VM {
         if self.text_section && instruction == 0xFF {
             let address = self.fetch_u64()?;
             self.set_register(R_INSTRUCTION_POINTER, address)?;
+
+            return Ok(());
         }
 
         let opcode = Opcode::try_from(instruction)?;
@@ -45,8 +47,6 @@ impl VM {
                     if instr == 0xff &&
                     let Ok(next_instr) = self.fetch_u8()
                     && next_instr == Opcode::TextSection as u8 {
-                        self.text_section = true;
-
                         let _ = self.step_back()?;
                         return Ok(())
                     }
@@ -56,7 +56,9 @@ impl VM {
                     return Err(MvmError::NoTextSection)
                 }
             },
-            Opcode::TextSection => {},
+            Opcode::TextSection => {
+                self.text_section = true;
+            },
 
             Opcode::Mov8 => {
                 let destination = self.fetch_u8()?;
