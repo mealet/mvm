@@ -66,6 +66,14 @@ impl Codegen {
         match expr {
             Expression::SectionDef { id, span: _ } => {
                 self.data_section = id == ".data";
+
+                if self.data_section {
+                    self.push_byte(Opcode::DataSection as u8);
+                    return;
+                }
+
+                self.push_byte(0xFF);
+                self.push_byte(Opcode::TextSection as u8);
             }
 
             Expression::EntryDef { label, span: _ } => {
