@@ -491,6 +491,12 @@ mod tests {
         }
 
         assert_eq!(codegen.pc, 1 + 1 + 8);
+        assert_eq!(
+            codegen.constants_refs,
+            HashMap::from([
+                (2, String::from("123"))
+            ])
+        );
         assert_eq!(codegen.output, [Opcode::Mov8 as u8, 0, /* address */ 0,0,0,0, 0,0,0,0 ]);
     }
 }
