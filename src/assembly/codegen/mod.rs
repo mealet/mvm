@@ -36,9 +36,99 @@ impl Codegen {
     }
 
     pub fn compile(&mut self, ast: &[Expression]) -> &[u8] {
+        // compiling expressions
+
         for expr in ast {
             self.compile_expr(expr);
         }
+
+        // resolving data section constants
+        
+        let mut relative_constants_pointers: HashMap<String, u64> = HashMap::new();
+        let mut constants_slice: Vec<u8> = Vec::new();
+
+        for constant in &self.constants {
+            let ptr = constants_slice.len() as u64;
+
+            match constant.1 {
+                Constant::U8(value) => {
+                    constants_slice.push(*value);
+
+                    relative_constants_pointers.insert(value.to_string(), ptr);
+                },
+
+                Constant::U16(value) => {
+                    let bytes = value.to_be_bytes();
+
+                    constants_slice.push(bytes[0]);
+                    constants_slice.push(bytes[1]);
+
+                    relative_constants_pointers.insert(value.to_string(), ptr);
+                },
+
+                Constant::U32(value) => {
+                    let bytes = value.to_be_bytes();
+
+                    constants_slice.push(bytes[0]);
+                    constants_slice.push(bytes[1]);
+                    constants_slice.push(bytes[2]);
+                    constants_slice.push(bytes[3]);
+
+                    relative_constants_pointers.insert(value.to_string(), ptr);
+                },
+
+                Constant::U64(value) => {
+                    let bytes = value.to_be_bytes();
+
+                    constants_slice.push(bytes[0]);
+                    constants_slice.push(bytes[1]);
+                    constants_slice.push(bytes[2]);
+                    constants_slice.push(bytes[3]);
+
+                    constants_slice.push(bytes[4]);
+                    constants_slice.push(bytes[5]);
+                    constants_slice.push(bytes[6]);
+                    constants_slice.push(bytes[7]);
+
+                    relative_constants_pointers.insert(value.to_string(), ptr);
+                },
+            }
+        }
+
+        let text_section = if let Some(pos) = self.output.windows(2).position(|w| w[0] == 0xFF && w[1] == Opcode::TextSection as u8) {
+            self.output.split_off(pos)
+        } else {
+            Vec::new()
+        };
+
+        for (_, relative_ptr) in &mut relative_constants_pointers {
+            *relative_ptr += self.output.len() as u64;
+        }
+
+        let text_section_offset = constants_slice.len() as u64;
+
+        self.output.append(&mut constants_slice);
+
+        // resolving offsets after data section
+
+        let mut constants_refs = HashMap::new();
+        let mut labels_refs = HashMap::new();
+        let mut labels = HashMap::new();
+
+        for (ptr, id) in &self.constants_refs {
+            constants_refs.insert(ptr + text_section_offset, id);
+        }
+
+        for (ptr, id) in &self.labels_refs {
+            labels_refs.insert(ptr + text_section_offset, id);
+        }
+
+        for (id, label) in &self.labels {
+            let ptr = if label.data_section { label.ptr } else { label.ptr + text_section_offset };
+            labels.insert(id, Label::new(ptr, label.data_section));
+        }
+
+        // resolving labels
 
         &self.output
     }
