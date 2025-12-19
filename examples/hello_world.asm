@@ -2,7 +2,7 @@
 
 section .data
   hello:
-    ascii "Hello, World!"
+    ascii "Hello, World!\n"
 
   len:
     [. - hello]
@@ -13,7 +13,7 @@ entry _start
 _start:
   ; -- syscall void write(int output, void *buffer, size_t length) --
 
-  mov %r0, $0 ; int output (stdout)
+  mov %r0, $1 ; int output (stdout)
 
   mov %r1, hello ; void* buffer (ptr to message)
   mov %r2, len ; size_t length (length variable)
