@@ -159,11 +159,183 @@ impl Codegen {
                                     self.compile_expr(args.get(1).unwrap());
                                 }
 
+                                Some(Expression::LabelRef(_, _)) => {
+                                    self.push_byte(Opcode::Mov64 as u8);
+                                    self.compile_expr(args.get(0).unwrap());
+                                    self.compile_expr(args.get(1).unwrap());
+                                }
+
                                 _ => unreachable!()
                             }
 
                             return;
                         }
+                    }
+
+                    "add" => {
+                        match args.get(1) {
+                            Some(Expression::UIntConstant(value, _)) => {
+                                let constant = Constant::new(*value);
+
+                                match constant {
+                                    Constant::U8(_) => self.push_byte(Opcode::Add8 as u8),
+                                    Constant::U16(_) => self.push_byte(Opcode::Add16 as u8),
+                                    Constant::U32(_) => self.push_byte(Opcode::Add32 as u8),
+                                    Constant::U64(_) => self.push_byte(Opcode::Add64 as u8),
+                                }
+
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            Some(Expression::AsmReg(_, _)) => {
+                                self.push_byte(Opcode::AddR2R as u8);
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            Some(Expression::LabelRef(_, _)) => {
+                                self.push_byte(Opcode::Add64 as u8);
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            _ => unreachable!()
+                        }
+                    }
+
+                    "sub" => {
+                        match args.get(1) {
+                            Some(Expression::UIntConstant(value, _)) => {
+                                let constant = Constant::new(*value);
+
+                                match constant {
+                                    Constant::U8(_) => self.push_byte(Opcode::Sub8 as u8),
+                                    Constant::U16(_) => self.push_byte(Opcode::Sub16 as u8),
+                                    Constant::U32(_) => self.push_byte(Opcode::Sub32 as u8),
+                                    Constant::U64(_) => self.push_byte(Opcode::Sub64 as u8),
+                                }
+
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            Some(Expression::AsmReg(_, _)) => {
+                                self.push_byte(Opcode::SubR2R as u8);
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            Some(Expression::LabelRef(_, _)) => {
+                                self.push_byte(Opcode::Sub64 as u8);
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            _ => unreachable!()
+                        }
+                    }
+
+                    "mul" => {
+                        match args.get(1) {
+                            Some(Expression::UIntConstant(value, _)) => {
+                                let constant = Constant::new(*value);
+
+                                match constant {
+                                    Constant::U8(_) => self.push_byte(Opcode::Mul8 as u8),
+                                    Constant::U16(_) => self.push_byte(Opcode::Mul16 as u8),
+                                    Constant::U32(_) => self.push_byte(Opcode::Mul32 as u8),
+                                    Constant::U64(_) => self.push_byte(Opcode::Mul64 as u8),
+                                }
+
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            Some(Expression::AsmReg(_, _)) => {
+                                self.push_byte(Opcode::MulR2R as u8);
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            Some(Expression::LabelRef(_, _)) => {
+                                self.push_byte(Opcode::Mul64 as u8);
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            _ => unreachable!()
+                        }
+                    }
+
+                    "div" => {
+                        match args.get(1) {
+                            Some(Expression::UIntConstant(value, _)) => {
+                                let constant = Constant::new(*value);
+
+                                match constant {
+                                    Constant::U8(_) => self.push_byte(Opcode::Div8 as u8),
+                                    Constant::U16(_) => self.push_byte(Opcode::Div16 as u8),
+                                    Constant::U32(_) => self.push_byte(Opcode::Div32 as u8),
+                                    Constant::U64(_) => self.push_byte(Opcode::Div64 as u8),
+                                }
+
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            Some(Expression::AsmReg(_, _)) => {
+                                self.push_byte(Opcode::DivR2R as u8);
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            Some(Expression::LabelRef(_, _)) => {
+                                self.push_byte(Opcode::Div64 as u8);
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            _ => unreachable!()
+                        }
+                    }
+
+                    "cmp" => {
+                        match args.get(1) {
+                            Some(Expression::UIntConstant(value, _)) => {
+                                let constant = Constant::new(*value);
+
+                                match constant {
+                                    Constant::U8(_) => self.push_byte(Opcode::Cmp8 as u8),
+                                    Constant::U16(_) => self.push_byte(Opcode::Cmp16 as u8),
+                                    Constant::U32(_) => self.push_byte(Opcode::Cmp32 as u8),
+                                    Constant::U64(_) => self.push_byte(Opcode::Cmp64 as u8),
+                                }
+
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            Some(Expression::AsmReg(_, _)) => {
+                                self.push_byte(Opcode::CmpR2R as u8);
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            Some(Expression::LabelRef(_, _)) => {
+                                self.push_byte(Opcode::Cmp64 as u8);
+                                self.compile_expr(args.get(0).unwrap());
+                                self.compile_expr(args.get(1).unwrap());
+                            }
+
+                            _ => unreachable!()
+                        }
+                    }
+
+                    "xadd" => {
+                        self.push_byte(Opcode::XAdd as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                        self.compile_expr(args.get(1).unwrap());
                     }
 
                     "push8" => {
