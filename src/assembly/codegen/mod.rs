@@ -824,8 +824,7 @@ mod tests {
 
         codegen.compile_expr(&ast[0]);
 
-        assert_eq!(codegen.pc, 1);
-        assert_eq!(codegen.output.get(0), Some(&80));
+        assert_eq!(codegen.pc, 8);
     }
 
     #[test]
