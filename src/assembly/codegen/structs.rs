@@ -1,12 +1,14 @@
 #[derive(Debug, PartialEq)]
 pub struct Label {
-    ptr: u64,
+    pub ptr: u64,
+    pub data_section: bool,
 }
 
 impl Label {
-    pub fn new(ptr: u64) -> Self {
+    pub fn new(ptr: u64, data_section: bool) -> Self {
         Self {
-            ptr
+            ptr,
+            data_section
         }
     }
 }

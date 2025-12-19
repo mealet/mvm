@@ -87,7 +87,7 @@ impl Codegen {
             }
 
             Expression::LabelDef { id, span: _ } => {
-                self.labels.insert(id.to_owned(), Label::new(self.pc));
+                self.labels.insert(id.to_owned(), Label::new(self.pc, self.data_section));
             }
 
             Expression::Directive { directive, args, span: _ } => {
@@ -117,9 +117,23 @@ impl Codegen {
                 }
             }
 
-            Expression::ComptimeExpr { expr, span: _ } => todo!(),
+            Expression::ComptimeExpr { expr, span: _ } => {
+                let value = self.calculate_comptime_expr(expr);
+                let bytes = value.to_be_bytes();
+
+                self.push_byte(bytes[0]);
+                self.push_byte(bytes[1]);
+                self.push_byte(bytes[2]);
+                self.push_byte(bytes[3]);
+
+                self.push_byte(bytes[4]);
+                self.push_byte(bytes[5]);
+                self.push_byte(bytes[6]);
+                self.push_byte(bytes[7]);
+            },
+
             Expression::Instruction { name, args, span: _ } => todo!(),
-            Expression::BinaryExpr { op, lhs, rhs, span } => todo!(),
+            Expression::BinaryExpr { op, lhs, rhs, span } => unreachable!(),
 
             Expression::UIntConstant(value, _) => {
                 if self.data_section {
@@ -192,12 +206,46 @@ impl Codegen {
                 self.push_byte(REGISTERS_INDEXES.iter().position(|el| el == name).unwrap_or_default() as u8);
             },
 
-            Expression::CurrentPtr(_) => todo!(),
+            Expression::CurrentPtr(_) => unreachable!(),
 
             _ => unimplemented!()
         }
+    }
 
+    fn calculate_comptime_expr(&self, expr: &Expression) -> u64 {
+        match expr {
+            Expression::ComptimeExpr { expr, span: _ } => {
+                self.calculate_comptime_expr(expr)
+            }
 
+            Expression::BinaryExpr { op, lhs, rhs, span: _ } => {
+                let lhs = self.calculate_comptime_expr(lhs);
+                let rhs = self.calculate_comptime_expr(rhs);
+
+                match op.as_str() {
+                    "+" => lhs.wrapping_add(rhs),
+                    "-" => lhs.wrapping_sub(rhs),
+                    "*" => lhs.wrapping_mul(rhs),
+                    "/" => lhs.wrapping_div(rhs),
+                    "%" => if rhs == 0 { 0 } else { lhs % rhs },
+                    _ => unreachable!()
+                }
+            }
+
+            Expression::LabelRef(label, _) => {
+                self.labels.get(label).unwrap().ptr
+            }
+
+            Expression::UIntConstant(value, _) => {
+                *value
+            }
+
+            Expression::CurrentPtr(_) => {
+                self.pc
+            }
+
+            _ => unreachable!()
+        }
     }
 }
 
@@ -220,7 +268,7 @@ mod tests {
         let mut codegen = Codegen::new();
         codegen.compile_expr(&ast[0]);
 
-        assert_eq!(codegen.labels.get("label_def"), Some(&Label::new(0)));
+        assert_eq!(codegen.labels.get("label_def"), Some(&Label::new(0, false)));
         assert_eq!(codegen.pc, 0);
         assert!(codegen.output.is_empty());
     }
@@ -241,7 +289,7 @@ mod tests {
         codegen.compile_expr(&ast[0]);
         codegen.compile_expr(&ast[1]);
 
-        assert_eq!(codegen.labels.get("label"), Some(&Label::new(0)));
+        assert_eq!(codegen.labels.get("label"), Some(&Label::new(0, false)));
         assert_eq!(codegen.pc, 8);
         assert_eq!(codegen.output, [0,0,0,0, 0,0,0,0]);
     }
@@ -324,5 +372,68 @@ mod tests {
 
         assert_eq!(codegen.pc, 15);
         assert_eq!(codegen.output, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+    }
+
+    #[test]
+    fn codegen_comtpime_expr_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "[$1 + $1 + $1]";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        let mut codegen = Codegen::new();
+
+        for ref expr in ast {
+            codegen.compile_expr(expr);
+        }
+
+        assert_eq!(codegen.pc, 8);
+        assert_eq!(codegen.output, [0, 0, 0, 0, 0, 0, 0, 3]);
+    }
+
+    #[test]
+    fn codegen_comtpime_with_currentptr_expr_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "$1 [. + $1]";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        let mut codegen = Codegen::new();
+
+        for ref expr in ast {
+            codegen.compile_expr(expr);
+        }
+
+        assert_eq!(codegen.pc, 16);
+        assert_eq!(codegen.output, [0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,9]);
+    }
+
+    #[test]
+    fn codegen_comtpime_with_label_expr_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "label: [label + $1]";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        let mut codegen = Codegen::new();
+
+        for ref expr in ast {
+            codegen.compile_expr(expr);
+        }
+
+        assert_eq!(codegen.pc, 8);
+        assert_eq!(codegen.output, [0, 0, 0, 0, 0, 0, 0, 1]);
     }
 }
