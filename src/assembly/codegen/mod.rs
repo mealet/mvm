@@ -426,6 +426,33 @@ impl Codegen {
                         self.compile_expr(args.get(1).unwrap());
                     },
 
+                    "jmp" => {
+                        self.push_byte(Opcode::Jmp as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    }
+
+                    "jz" => {
+                        self.push_byte(Opcode::Jz as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    }
+
+                    "jnz" => {
+                        self.push_byte(Opcode::Jnz as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    }
+
+                    "je" => {
+                        self.push_byte(Opcode::Je as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    }
+
+                    "jne" => {
+                        self.push_byte(Opcode::Jne as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    }
+
                     _ => unimplemented!()
                 }
             },
