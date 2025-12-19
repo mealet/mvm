@@ -169,6 +169,14 @@ impl Analyzer {
             }
 
             Expression::ComptimeExpr { expr, span } => {
+                if self.section != Section::Data {
+                    self.error(AssemblyError::NotAllowed {
+                        label: String::from("comptime expressions are allowed only in `.data` section"),
+                        src: self.src.clone(),
+                        span: *span
+                    });
+                }
+
                 let prev_mode = self.comptime_mode;
                 self.comptime_mode = true;
 
