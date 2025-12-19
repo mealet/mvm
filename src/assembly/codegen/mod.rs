@@ -134,6 +134,24 @@ impl Codegen {
 
             Expression::Instruction { name, args, span: _ } => {
                 match name.as_str() {
+                    "halt" => {
+                        self.push_byte(Opcode::Halt as u8);
+                    }
+
+                    "ret" => {
+                        self.push_byte(Opcode::Return as u8);
+                    }
+
+                    "call" => {
+                        self.push_byte(Opcode::Call as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    }
+
+                    "int" => {
+                        self.push_byte(Opcode::Interrupt as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    }
+
                     "mov" => {
                         // mov %dest, ...
                         if let Some(Expression::AsmReg(_, _)) = args.get(0) {
