@@ -174,7 +174,14 @@ impl Codegen {
 
             Expression::StringConstant(_, _) => unreachable!(),
 
-            Expression::AsmConstant(_, _) => todo!(),
+            Expression::AsmConstant(name, _) => {
+                match name.as_str() {
+                    "syscall" => {
+                        self.push_byte(80);
+                    }
+                    _ => unreachable!()
+                }
+            },
             Expression::AsmReg(_, _) => todo!(),
 
             Expression::CurrentPtr(_) => todo!(),
@@ -269,5 +276,24 @@ mod tests {
         assert_eq!(codegen.constants.get("123"), Some(&Constant::U8(123)));
         assert_eq!(codegen.constants_refs.get(&0), Some(&String::from("123")));
         assert_eq!(codegen.pc, 8);
+    }
+
+    #[test]
+    fn codegen_asm_constant_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "$syscall";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        let mut codegen = Codegen::new();
+
+        codegen.compile_expr(&ast[0]);
+
+        assert_eq!(codegen.pc, 1);
+        assert_eq!(codegen.output.get(0), Some(&80));
     }
 }
