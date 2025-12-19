@@ -182,7 +182,15 @@ impl Codegen {
                     _ => unreachable!()
                 }
             },
-            Expression::AsmReg(_, _) => todo!(),
+            Expression::AsmReg(name, _) => {
+                const REGISTERS_INDEXES: [&str; 15] = [
+                    "r0", "r1", "r2", "r3", "r4", "r5", "r6",
+                    "r7", "r8", "call", "accumulator", "instruction_ptr", "stack_ptr",
+                    "frame_ptr", "mem_ptr"
+                ];
+                
+                self.push_byte(REGISTERS_INDEXES.iter().position(|el| el == name).unwrap_or_default() as u8);
+            },
 
             Expression::CurrentPtr(_) => todo!(),
 
@@ -295,5 +303,26 @@ mod tests {
 
         assert_eq!(codegen.pc, 1);
         assert_eq!(codegen.output.get(0), Some(&80));
+    }
+
+    #[test]
+    fn codegen_asm_regs_test() {
+        const FILENAME: &str = "test";
+        const CODE: &str = "%r0 %r1 %r2 %r3 %r4 %r5 %r6 %r7 %r8 %call %accumulator %instruction_ptr %stack_ptr %frame_ptr %mem_ptr";
+
+        let mut lexer = Lexer::new(FILENAME, CODE);
+        let tokens = lexer.tokenize().unwrap();
+
+        let mut parser = Parser::new(FILENAME, CODE, &tokens);
+        let ast = parser.parse().unwrap();
+
+        let mut codegen = Codegen::new();
+
+        for ref expr in ast {
+            codegen.compile_expr(expr);
+        }
+
+        assert_eq!(codegen.pc, 15);
+        assert_eq!(codegen.output, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
     }
 }
