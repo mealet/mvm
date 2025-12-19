@@ -7,6 +7,7 @@ mod assembly;
 
 fn main() {
     // TODO: Implement fancy CLI
+    // TODO: Add memory && stack size reader for MVM format
 
     let cli = cli::cli().get_matches();
 
