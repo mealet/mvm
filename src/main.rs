@@ -56,7 +56,7 @@ fn main() {
             let mut codegen = assembly::codegen::Codegen::new();
             let code = codegen.compile(&ast);
 
-            println!("{:#?}", code);
+            std::fs::write(path_to_asm.replace(".asm", ".mvm"), code);
         },
 
         Some(("run", sub_matches)) => {
