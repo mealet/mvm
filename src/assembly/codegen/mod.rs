@@ -166,6 +166,94 @@ impl Codegen {
                         }
                     }
 
+                    "push8" => {
+                        self.push_byte(Opcode::Push8 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    },
+
+                    "push16" => {
+                        self.push_byte(Opcode::Push16 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    },
+
+                    "push32" => {
+                        self.push_byte(Opcode::Push32 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    },
+
+                    "push64" => {
+                        self.push_byte(Opcode::Push64 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    },
+
+                    "pop8" => {
+                        self.push_byte(Opcode::Pop8 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    },
+
+                    "pop16" => {
+                        self.push_byte(Opcode::Pop16 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    },
+
+                    "pop32" => {
+                        self.push_byte(Opcode::Pop32 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    },
+
+                    "pop64" => {
+                        self.push_byte(Opcode::Pop64 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                    },
+
+                    "frame8" => {
+                        self.push_byte(Opcode::Frame8 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    },
+
+                    "frame16" => {
+                        self.push_byte(Opcode::Frame16 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    },
+
+                    "frame32" => {
+                        self.push_byte(Opcode::Frame32 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    },
+
+                    "frame64" => {
+                        self.push_byte(Opcode::Frame64 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    },
+
+                    "peek8" => {
+                        self.push_byte(Opcode::Peek8 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    },
+
+                    "peek16" => {
+                        self.push_byte(Opcode::Peek16 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    },
+
+                    "peek32" => {
+                        self.push_byte(Opcode::Peek32 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    },
+
+                    "peek64" => {
+                        self.push_byte(Opcode::Peek64 as u8);
+                        self.compile_expr(args.get(0).unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    },
+
                     _ => unimplemented!()
                 }
             },
