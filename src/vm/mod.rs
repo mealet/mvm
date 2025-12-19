@@ -49,6 +49,7 @@ pub struct VM {
     ],
 
     pub running: bool,
+    pub text_section: bool,
     pub exit_code: u8,
 
     pub stack_size: usize,
@@ -64,6 +65,7 @@ impl VM {
             registers: MemoryBuffer::new(15 * 8),
             interrupt_handlers: [None; 256],
             running: false,
+            text_section: false,
             exit_code: 1,
             stack_size,
         };

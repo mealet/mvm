@@ -7,6 +7,11 @@ use super::{
 
 impl VM {
     pub fn execute_instruction(&mut self, instruction: u8) -> Result<(), MvmError> {
+        if self.text_section && instruction == 0xFF {
+            let address = self.fetch_u64()?;
+            self.set_register(R_INSTRUCTION_POINTER, address)?;
+        }
+
         let opcode = Opcode::try_from(instruction)?;
 
         match opcode {
@@ -40,6 +45,8 @@ impl VM {
                     if instr == 0xff &&
                     let Ok(next_instr) = self.fetch_u8()
                     && next_instr == Opcode::TextSection as u8 {
+                        self.text_section = true;
+
                         let _ = self.step_back()?;
                         return Ok(())
                     }
