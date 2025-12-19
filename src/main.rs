@@ -52,6 +52,11 @@ fn main() {
 
                 std::process::exit(1);
             });
+
+            let mut codegen = assembly::codegen::Codegen::new();
+            let code = codegen.compile(&ast);
+
+            println!("{:#?}", code);
         },
 
         Some(("run", sub_matches)) => {
