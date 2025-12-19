@@ -29,6 +29,9 @@ pub enum MvmError {
     #[error("unknown interrupt is being called")]
     UnknownInterrupt,
 
+    #[error("unknown system call catched: {0}")]
+    UnknownSystemCall(u64),
+
     #[error("catched division by zero")]
     DivisionByZero,
 

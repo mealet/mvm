@@ -24,7 +24,30 @@ impl VM {
 
     // system call
     fn handle_int80(&mut self) -> Result<(), MvmError> {
-        // TODO: Implement system call       
+
+        match self.get_register(R_SYSTEM_CALL)? {
+            // exit
+            0 => {
+                self.exit_code = self.get_register(R0)? as u8;
+                self.running = false;
+            }
+
+            2 => {
+                let fd = self.get_register(R0)? as libc::c_int;
+                let len = self.get_register(R2)? as usize;
+
+                let in_mem_buffer = self.get_register(R1)? as usize;
+                let buffer = unsafe {
+                    self.memory.inner.as_ptr().add(in_mem_buffer) as *const libc::c_void
+                };
+
+                self.set_register(R_ACCUMULATOR, unsafe { libc::write(fd, buffer, len) } as u64);
+            }
+
+            unknown => {
+                return Err(MvmError::UnknownSystemCall(unknown));
+            }
+        }
         
         // return instruction
         self.pop_state()?;
