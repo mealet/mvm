@@ -1,10 +1,19 @@
 [package]
 name = "mvm"
-version = "0.0.1"
+version = "0.1.0"
+description = "Fast virtual machine with own assembly language"
+repository = "https://github.com/mealet/mvm"
+authors = ["mealet <workjason34@gmail.com>"]
+license = "MIT"
 edition = "2024"
 
 [dependencies]
-clap = "4.5.53"
+clap = { version = "4.5.53" }
+colored = "3.0.0"
 libc = "0.2.178"
 miette = { version = "7.6.0", features = ["fancy"] }
 thiserror = "2.0.17"
+
+[profile.release]
+lto = true
+codegen-units = 1
