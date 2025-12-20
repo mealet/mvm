@@ -1,4 +1,4 @@
-use clap::{arg, Command};
+use clap::{Command, arg};
 use colored::Colorize;
 
 pub fn cli() -> Command {
@@ -14,24 +14,20 @@ pub fn cli() -> Command {
                 .arg(
                     arg!(-m <MEMSIZE> "machine memory size in bytes")
                         .default_value("1024")
-                        .required(false)
+                        .required(false),
                 )
                 .arg(
                     arg!(-s <STACKSIZE> "stack size in bytes")
                         .default_value("128")
-                        .required(false)
+                        .required(false),
                 )
-                .arg(arg!(<PROGRAM> "path to program binary file"))
+                .arg(arg!(<PROGRAM> "path to program binary file")),
         )
         .subcommand(
             Command::new("compile")
-                .arg(
-                    arg!(-d --debug "debug build of program")
-                )
-                .arg(
-                    arg!(<ASM> "assembly file path")
-                )
-                .arg_required_else_help(true)
+                .arg(arg!(-d --debug "debug build of program"))
+                .arg(arg!(<ASM> "assembly file path"))
+                .arg_required_else_help(true),
         )
 }
 

@@ -33,12 +33,12 @@ pub enum Expression {
         args: Vec<Expression>,
         span: SourceSpan,
     },
-    
+
     BinaryExpr {
         op: String,
         lhs: Box<Expression>,
         rhs: Box<Expression>,
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     UIntConstant(u64, SourceSpan),
@@ -69,7 +69,7 @@ impl Expression {
             Expression::AsmReg(_, span) => *span,
             Expression::LabelRef(_, span) => *span,
             Expression::CurrentPtr(span) => *span,
-            Expression::None => (0, 0).into()
+            Expression::None => (0, 0).into(),
         }
     }
 }

@@ -14,17 +14,15 @@ macro_rules! assert_arg {
 }
 
 macro_rules! verify_boundary {
-    ($self:expr, $value:expr, $span:expr, $type:ty) => {
-        {
-            if <$type>::try_from($value).is_err() {
-                $self.error(AssemblyError::InvalidArgument {
-                    label: format!("value is out of `{}` bounds", stringify!($type)),
-                    src: $self.src.clone(),
-                    span: $span
-                });
-            }
+    ($self:expr, $value:expr, $span:expr, $type:ty) => {{
+        if <$type>::try_from($value).is_err() {
+            $self.error(AssemblyError::InvalidArgument {
+                label: format!("value is out of `{}` bounds", stringify!($type)),
+                src: $self.src.clone(),
+                span: $span,
+            });
         }
-    };
+    }};
 }
 
 pub(crate) use assert_arg;

@@ -1,13 +1,12 @@
+use error::MvmError;
 pub use isa::Opcode;
 use memory::MemoryBuffer;
-use error::MvmError;
-use execution::*;
 
-mod isa;
-mod memory;
 mod error;
 mod execution;
 mod interrupts;
+mod isa;
+mod memory;
 
 // Registers Indexes
 // -----------------
@@ -28,6 +27,8 @@ pub const R_FRAME_POINTER: u64 = 13;
 pub const R_MEMORY_POINTER: u64 = 14;
 // -----------------
 
+type InterruptHandler = fn(&mut VM) -> Result<(), MvmError>;
+
 pub struct VM {
     pub memory: MemoryBuffer,
 
@@ -41,12 +42,7 @@ pub struct VM {
     /// R14 - Memory Pointer (next address after program)
     pub registers: MemoryBuffer,
 
-    pub interrupt_handlers: [
-        Option<
-            fn(&mut Self) -> Result<(), MvmError> // interrupt function signature
-        >;
-        256
-    ],
+    pub interrupt_handlers: [Option<InterruptHandler>; 256],
 
     pub running: bool,
     pub text_section: bool,
@@ -58,7 +54,7 @@ pub struct VM {
 impl VM {
     pub fn new(memsize: usize, stack_size: usize) -> Result<Self, MvmError> {
         let mut memory = MemoryBuffer::new(memsize);
-        memory.set_u8(0, Opcode::Halt as u8);
+        memory.set_u8(0, Opcode::Halt as u8)?;
 
         let mut vm = Self {
             memory,
@@ -96,7 +92,9 @@ impl VM {
             return Err(MvmError::OutOfBounds);
         }
 
-        if program.len() < 1 { return Ok(()) };
+        if program.is_empty() {
+            return Ok(());
+        };
 
         for (index, instruction) in program.iter().enumerate() {
             self.memory.set_u8(index as u64, *instruction)?;
@@ -106,11 +104,12 @@ impl VM {
 
         if self.memory.get_u8((program.len() - 1) as u64)? != Opcode::Halt as u8 {
             memptr += 1;
-            self.memory.set_u8((program.len()) as u64, Opcode::Halt as u8)?;
+            self.memory
+                .set_u8((program.len()) as u64, Opcode::Halt as u8)?;
         }
 
-        self.set_register(R_MEMORY_POINTER, memptr as u64);
-        self.set_register(R_INSTRUCTION_POINTER, 0);
+        self.set_register(R_MEMORY_POINTER, memptr as u64)?;
+        self.set_register(R_INSTRUCTION_POINTER, 0)?;
 
         Ok(())
     }
@@ -127,6 +126,7 @@ impl VM {
     }
 }
 
+#[allow(unused)]
 impl VM {
     pub fn get_register(&self, index: u64) -> Result<u64, MvmError> {
         self.registers.get_u64(index * 8)
@@ -143,28 +143,28 @@ impl VM {
 
     fn step_back(&mut self) -> Result<u8, MvmError> {
         let instruction_ptr = self.get_register(R_INSTRUCTION_POINTER)?;
-        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_sub(1));
+        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_sub(1))?;
 
         self.memory.get_u8(instruction_ptr.wrapping_sub(1))
     }
 
     fn fetch_u8(&mut self) -> Result<u8, MvmError> {
         let instruction_ptr = self.get_register(R_INSTRUCTION_POINTER)?;
-        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_add(1));
+        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_add(1))?;
 
         self.memory.get_u8(instruction_ptr)
     }
 
     fn fetch_u16(&mut self) -> Result<u16, MvmError> {
         let instruction_ptr = self.get_register(R_INSTRUCTION_POINTER)?;
-        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_add(2));
+        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_add(2))?;
 
         self.memory.get_u16(instruction_ptr)
     }
 
     fn fetch_u32(&mut self) -> Result<u32, MvmError> {
         let instruction_ptr = self.get_register(R_INSTRUCTION_POINTER)?;
-        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_add(4));
+        self.set_register(R_INSTRUCTION_POINTER, instruction_ptr.wrapping_add(4))?;
 
         self.memory.get_u32(instruction_ptr)
     }
@@ -177,6 +177,7 @@ impl VM {
     }
 }
 
+#[allow(unused)]
 impl VM {
     // stack
 
@@ -195,7 +196,6 @@ impl VM {
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
         let address = stack_ptr - offset as u64 - BYTES_LENGTH;
 
-
         self.memory.get_u16(address)
     }
 
@@ -204,7 +204,6 @@ impl VM {
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
         let address = stack_ptr - offset as u64 - BYTES_LENGTH;
-
 
         self.memory.get_u32(address)
     }
@@ -215,7 +214,6 @@ impl VM {
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
         let address = stack_ptr - offset as u64 - BYTES_LENGTH;
 
-
         self.memory.get_u64(address)
     }
 
@@ -225,7 +223,6 @@ impl VM {
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
         let address = stack_ptr - offset as u64 - BYTES_LENGTH;
 
-
         self.memory.set_u8(address, value)
     }
 
@@ -234,7 +231,6 @@ impl VM {
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
         let address = stack_ptr - offset as u64 - BYTES_LENGTH;
-
 
         self.memory.set_u16(address, value)
     }
@@ -253,7 +249,6 @@ impl VM {
 
         let stack_ptr = self.get_register(R_STACK_POINTER)?;
         let address = stack_ptr - offset as u64 - BYTES_LENGTH;
-
 
         self.memory.set_u64(address, value)
     }
@@ -325,7 +320,7 @@ impl VM {
         }
 
         let value = self.memory.get_u8(stack_ptr - BYTES_LENGTH)?;
-        self.set_register(R_STACK_POINTER, (stack_ptr - BYTES_LENGTH))?;
+        self.set_register(R_STACK_POINTER, stack_ptr - BYTES_LENGTH)?;
 
         Ok(value)
     }
@@ -345,7 +340,7 @@ impl VM {
         }
 
         let value = self.memory.get_u16(stack_ptr - BYTES_LENGTH)?;
-        self.set_register(R_STACK_POINTER, (stack_ptr - BYTES_LENGTH))?;
+        self.set_register(R_STACK_POINTER, stack_ptr - BYTES_LENGTH)?;
 
         Ok(value)
     }
@@ -365,7 +360,7 @@ impl VM {
         }
 
         let value = self.memory.get_u32(stack_ptr - BYTES_LENGTH)?;
-        self.set_register(R_STACK_POINTER, (stack_ptr - BYTES_LENGTH))?;
+        self.set_register(R_STACK_POINTER, stack_ptr - BYTES_LENGTH)?;
 
         Ok(value)
     }
@@ -384,9 +379,8 @@ impl VM {
             return Err(MvmError::StackOutOfFrame);
         }
 
-
         let value = self.memory.get_u64(stack_ptr - BYTES_LENGTH)?;
-        self.set_register(R_STACK_POINTER, (stack_ptr - BYTES_LENGTH))?;
+        self.set_register(R_STACK_POINTER, stack_ptr - BYTES_LENGTH)?;
 
         Ok(value)
     }
@@ -453,7 +447,7 @@ impl VM {
 impl VM {
     fn push_state(&mut self) -> Result<(), MvmError> {
         const REQUIRED_SPACE: u64 = 14 * 8; // 14 is count of registers below
-        
+
         if self.get_register(R_STACK_POINTER)? + REQUIRED_SPACE > self.memory.len() as u64 {
             return Err(MvmError::CallStackOverflow);
         }
@@ -498,7 +492,7 @@ impl VM {
         self.set_register(R_FRAME_POINTER, frame_ptr)?;
 
         let instruction_ptr = self.stack_pop_u64()?;
-        let accumulator = self.stack_pop_u64()?;
+        let _accumulator = self.stack_pop_u64()?;
         let system_call = self.stack_pop_u64()?;
         let r8 = self.stack_pop_u64()?;
         let r7 = self.stack_pop_u64()?;
@@ -550,11 +544,7 @@ mod tests {
         assert!(vm.memory.len() == 128);
         assert!(!vm.running);
 
-        let program = [
-            Opcode::Mov8 as u8,
-            R0 as u8,
-            5
-        ];
+        let program = [Opcode::Mov8 as u8, R0 as u8, 5];
 
         vm.insert_program(&program)?;
 
@@ -576,12 +566,7 @@ mod tests {
         assert!(vm.memory.len() == 128);
         assert!(!vm.running);
 
-        let program = [
-            Opcode::Mov8 as u8,
-            R0 as u8,
-            5,
-            Opcode::Halt as u8
-        ];
+        let program = [Opcode::Mov8 as u8, R0 as u8, 5, Opcode::Halt as u8];
 
         vm.insert_program(&program)?;
 
@@ -600,11 +585,7 @@ mod tests {
     fn vm_fetch_u8_test() -> Result<(), MvmError> {
         let mut vm = VM::new(128, 16)?;
 
-        let program = [
-            1,
-            2,
-            3,
-        ];
+        let program = [1, 2, 3];
 
         vm.insert_program(&program)?;
 
@@ -622,7 +603,6 @@ mod tests {
         let program = [
             u16::to_be_bytes(400)[0],
             u16::to_be_bytes(400)[1],
-
             u16::to_be_bytes(500)[0],
             u16::to_be_bytes(500)[1],
         ];
@@ -644,7 +624,6 @@ mod tests {
             u32::to_be_bytes(70123)[1],
             u32::to_be_bytes(70123)[2],
             u32::to_be_bytes(70123)[3],
-
             u32::to_be_bytes(123000)[0],
             u32::to_be_bytes(123000)[1],
             u32::to_be_bytes(123000)[2],
@@ -672,7 +651,6 @@ mod tests {
             u64::to_be_bytes(70123)[5],
             u64::to_be_bytes(70123)[6],
             u64::to_be_bytes(70123)[7],
-
             u64::to_be_bytes(123000)[0],
             u64::to_be_bytes(123000)[1],
             u64::to_be_bytes(123000)[2],
@@ -695,21 +673,21 @@ mod tests {
     fn vm_set_register_test() -> Result<(), MvmError> {
         let mut vm = VM::new(128, 16)?;
 
-        vm.set_register(R0, 123);
-        vm.set_register(R1, 123);
-        vm.set_register(R2, 123);
-        vm.set_register(R3, 123);
-        vm.set_register(R4, 123);
-        vm.set_register(R5, 123);
-        vm.set_register(R6, 123);
-        vm.set_register(R7, 123);
-        vm.set_register(R8, 123);
-        vm.set_register(R_SYSTEM_CALL, 123);
-        vm.set_register(R_ACCUMULATOR, 123);
-        vm.set_register(R_INSTRUCTION_POINTER, 123);
-        vm.set_register(R_STACK_POINTER, 123);
-        vm.set_register(R_FRAME_POINTER, 123);
-        vm.set_register(R_MEMORY_POINTER, 123);
+        vm.set_register(R0, 123)?;
+        vm.set_register(R1, 123)?;
+        vm.set_register(R2, 123)?;
+        vm.set_register(R3, 123)?;
+        vm.set_register(R4, 123)?;
+        vm.set_register(R5, 123)?;
+        vm.set_register(R6, 123)?;
+        vm.set_register(R7, 123)?;
+        vm.set_register(R8, 123)?;
+        vm.set_register(R_SYSTEM_CALL, 123)?;
+        vm.set_register(R_ACCUMULATOR, 123)?;
+        vm.set_register(R_INSTRUCTION_POINTER, 123)?;
+        vm.set_register(R_STACK_POINTER, 123)?;
+        vm.set_register(R_FRAME_POINTER, 123)?;
+        vm.set_register(R_MEMORY_POINTER, 123)?;
 
         assert_eq!(vm.get_register(R0)?, 123);
         assert_eq!(vm.get_register(R1)?, 123);
@@ -746,9 +724,9 @@ mod tests {
         assert_eq!(vm.stack_get_u8(OFFSET2)?, 5);
         assert_eq!(vm.stack_get_u8(OFFSET3)?, 5);
 
-        vm.stack_set_u8(OFFSET1, 123);
-        vm.stack_set_u8(OFFSET2, 123);
-        vm.stack_set_u8(OFFSET3, 123);
+        vm.stack_set_u8(OFFSET1, 123)?;
+        vm.stack_set_u8(OFFSET2, 123)?;
+        vm.stack_set_u8(OFFSET3, 123)?;
 
         assert_eq!(vm.stack_get_u8(OFFSET1)?, 123);
         assert_eq!(vm.stack_get_u8(OFFSET2)?, 123);
@@ -773,9 +751,9 @@ mod tests {
         assert_eq!(vm.stack_get_u16(OFFSET2)?, 5);
         assert_eq!(vm.stack_get_u16(OFFSET3)?, 5);
 
-        vm.stack_set_u16(OFFSET1, 123);
-        vm.stack_set_u16(OFFSET2, 123);
-        vm.stack_set_u16(OFFSET3, 123);
+        vm.stack_set_u16(OFFSET1, 123)?;
+        vm.stack_set_u16(OFFSET2, 123)?;
+        vm.stack_set_u16(OFFSET3, 123)?;
 
         assert_eq!(vm.stack_get_u16(OFFSET1)?, 123);
         assert_eq!(vm.stack_get_u16(OFFSET2)?, 123);
@@ -800,9 +778,9 @@ mod tests {
         assert_eq!(vm.stack_get_u32(OFFSET2)?, 5);
         assert_eq!(vm.stack_get_u32(OFFSET3)?, 5);
 
-        vm.stack_set_u32(OFFSET1, 123);
-        vm.stack_set_u32(OFFSET2, 123);
-        vm.stack_set_u32(OFFSET3, 123);
+        vm.stack_set_u32(OFFSET1, 123)?;
+        vm.stack_set_u32(OFFSET2, 123)?;
+        vm.stack_set_u32(OFFSET3, 123)?;
 
         assert_eq!(vm.stack_get_u32(OFFSET1)?, 123);
         assert_eq!(vm.stack_get_u32(OFFSET2)?, 123);
@@ -827,9 +805,9 @@ mod tests {
         assert_eq!(vm.stack_get_u64(OFFSET2)?, 5);
         assert_eq!(vm.stack_get_u64(OFFSET3)?, 5);
 
-        vm.stack_set_u64(OFFSET1, 123);
-        vm.stack_set_u64(OFFSET2, 123);
-        vm.stack_set_u64(OFFSET3, 123);
+        vm.stack_set_u64(OFFSET1, 123)?;
+        vm.stack_set_u64(OFFSET2, 123)?;
+        vm.stack_set_u64(OFFSET3, 123)?;
 
         assert_eq!(vm.stack_get_u64(OFFSET1)?, 123);
         assert_eq!(vm.stack_get_u64(OFFSET2)?, 123);
@@ -846,9 +824,9 @@ mod tests {
 
         let mut vm = VM::new(128, 16)?;
 
-        vm.frame_set_u8(OFFSET1, 123);
-        vm.frame_set_u8(OFFSET2, 123);
-        vm.frame_set_u8(OFFSET3, 123);
+        vm.frame_set_u8(OFFSET1, 123)?;
+        vm.frame_set_u8(OFFSET2, 123)?;
+        vm.frame_set_u8(OFFSET3, 123)?;
 
         assert_eq!(vm.frame_get_u8(OFFSET1)?, 123);
         assert_eq!(vm.frame_get_u8(OFFSET2)?, 123);
@@ -865,9 +843,9 @@ mod tests {
 
         let mut vm = VM::new(128, 16)?;
 
-        vm.frame_set_u16(OFFSET1, 123);
-        vm.frame_set_u16(OFFSET2, 123);
-        vm.frame_set_u16(OFFSET3, 123);
+        vm.frame_set_u16(OFFSET1, 123)?;
+        vm.frame_set_u16(OFFSET2, 123)?;
+        vm.frame_set_u16(OFFSET3, 123)?;
 
         assert_eq!(vm.frame_get_u16(OFFSET1)?, 123);
         assert_eq!(vm.frame_get_u16(OFFSET2)?, 123);
@@ -884,9 +862,9 @@ mod tests {
 
         let mut vm = VM::new(128, 16)?;
 
-        vm.frame_set_u32(OFFSET1, 123);
-        vm.frame_set_u32(OFFSET2, 123);
-        vm.frame_set_u32(OFFSET3, 123);
+        vm.frame_set_u32(OFFSET1, 123)?;
+        vm.frame_set_u32(OFFSET2, 123)?;
+        vm.frame_set_u32(OFFSET3, 123)?;
 
         assert_eq!(vm.frame_get_u32(OFFSET1)?, 123);
         assert_eq!(vm.frame_get_u32(OFFSET2)?, 123);
@@ -903,9 +881,9 @@ mod tests {
 
         let mut vm = VM::new(128, 32)?;
 
-        vm.frame_set_u64(OFFSET1, 123);
-        vm.frame_set_u64(OFFSET2, 123);
-        vm.frame_set_u64(OFFSET3, 123);
+        vm.frame_set_u64(OFFSET1, 123)?;
+        vm.frame_set_u64(OFFSET2, 123)?;
+        vm.frame_set_u64(OFFSET3, 123)?;
 
         assert_eq!(vm.frame_get_u64(OFFSET1)?, 123);
         assert_eq!(vm.frame_get_u64(OFFSET2)?, 123);
@@ -937,8 +915,14 @@ mod tests {
 
         vm.push_state()?;
 
-        assert_eq!(vm.get_register(R_FRAME_POINTER)?, MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE));
-        assert_eq!(vm.get_register(R_STACK_POINTER)?, MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE));
+        assert_eq!(
+            vm.get_register(R_FRAME_POINTER)?,
+            MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE)
+        );
+        assert_eq!(
+            vm.get_register(R_STACK_POINTER)?,
+            MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE)
+        );
 
         Ok(())
     }
@@ -969,15 +953,19 @@ mod tests {
         vm.set_register(R_ACCUMULATOR, REG_VALUES)?;
 
         vm.push_state()?;
-        
-        assert_eq!(vm.get_register(R_FRAME_POINTER)?, MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE));
-        assert_eq!(vm.get_register(R_STACK_POINTER)?, MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE));
+
+        assert_eq!(
+            vm.get_register(R_FRAME_POINTER)?,
+            MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE)
+        );
+        assert_eq!(
+            vm.get_register(R_STACK_POINTER)?,
+            MEMSIZE - STACKSIZE + (PUSHED_REGSITERS * REGISTERS_EACH_SIZE)
+        );
 
         // for testing extra data erase
-        vm.stack_push_u64(0);
-        vm.stack_push_u64(0);
-        vm.stack_push_u64(0);
-        vm.stack_push_u64(0);
+        vm.stack_push_u64(0)?;
+        vm.stack_push_u64(0)?;
 
         vm.pop_state()?;
 

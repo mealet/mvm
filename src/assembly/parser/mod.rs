@@ -3,15 +3,15 @@ use miette::NamedSource;
 use super::{
     Source,
     error::{self, AssemblyError},
-    lexer::{Token, TokenType}
+    lexer::{Token, TokenType},
 };
 
 use expressions::Expression;
 
 pub mod expressions;
 
-const BINARY_OPERATORS: [&'static str; 5] = ["+", "-", "*", "/", "%"];
-const PRIORITY_BINARY_OPERATORS: [&'static str; 3] = ["*", "/", "%"];
+const BINARY_OPERATORS: [&str; 5] = ["+", "-", "*", "/", "%"];
+const PRIORITY_BINARY_OPERATORS: [&str; 3] = ["*", "/", "%"];
 
 pub struct Parser<'tokens> {
     src: Source,
@@ -21,17 +21,21 @@ pub struct Parser<'tokens> {
     position: usize,
 
     errors: Vec<AssemblyError>,
-    eof: bool
+    eof: bool,
 }
 
 impl<'tokens> Parser<'tokens> {
-    pub fn new(filename: impl AsRef<str>, source: impl AsRef<str>, tokens: &'tokens [Token]) -> Self {
+    pub fn new(
+        filename: impl AsRef<str>,
+        source: impl AsRef<str>,
+        tokens: &'tokens [Token],
+    ) -> Self {
         Self {
             src: NamedSource::new(filename, source.as_ref().to_owned()),
             tokens,
             position: 0,
             errors: Vec::new(),
-            eof_token: Token::new(String::new(), TokenType::EOF, (0, 0).into()),
+            eof_token: Token::new(String::new(), TokenType::Eof, (0, 0).into()),
             eof: false,
         }
     }
@@ -46,11 +50,13 @@ impl<'tokens> Parser<'tokens> {
                 output.push(expr);
             }
 
-            if self.eof { break };
+            if self.eof {
+                break;
+            };
         }
 
         if !self.errors.is_empty() {
-            return Err(&self.errors)
+            return Err(&self.errors);
         }
 
         Ok(output)
@@ -71,10 +77,10 @@ impl<'tokens> Parser<'tokens> {
             }
         }
     }
-    
+
     fn next_token(&mut self) -> &Token {
         self.position += 1;
-        return self.peek_token();
+        self.peek_token()
     }
 
     fn skip_token(&mut self) {
@@ -82,25 +88,33 @@ impl<'tokens> Parser<'tokens> {
     }
 
     fn expect(&mut self, expected: TokenType) -> bool {
-        self.peek_token().token_type == expected 
+        self.peek_token().token_type == expected
     }
 
-    fn skip_expected(&mut self, expected: TokenType) -> Result<(), AssemblyError> {
+    fn skip_expected(&mut self, expected: TokenType) -> Result<(), Box<AssemblyError>> {
         if self.peek_token().token_type == expected {
             self.skip_token();
             return Ok(());
         }
 
-        Err(AssemblyError::UnexpectedToken {
+        Err(Box::new(AssemblyError::UnexpectedToken {
             expected: expected.to_string().to_lowercase(),
             found: self.peek_token().token_type.to_string().to_lowercase(),
             src: self.src.clone(),
-            span: self.peek_token().span
-        })
+            span: self.peek_token().span,
+        }))
     }
 
+    #[allow(unused)]
     fn skip_to_new_expression(&mut self) {
-        while ![TokenType::Keyword, TokenType::Label, TokenType::Instruction, TokenType::EOF].contains(&self.peek_token().token_type) {
+        while ![
+            TokenType::Keyword,
+            TokenType::Label,
+            TokenType::Instruction,
+            TokenType::Eof,
+        ]
+        .contains(&self.peek_token().token_type)
+        {
             self.skip_token();
         }
     }
@@ -108,58 +122,64 @@ impl<'tokens> Parser<'tokens> {
 
 impl<'tokens> Parser<'tokens> {
     fn term(&mut self) -> Expression {
-        let expr_offset = self.peek_token().span.offset();
+        // let expr_offset = self.peek_token().span.offset();
         let current = self.peek_token().clone();
 
         match current.token_type {
             TokenType::Identifier => {
                 self.skip_token();
-                return Expression::LabelRef(current.value, current.span);
-            },
+                Expression::LabelRef(current.value, current.span)
+            }
 
             TokenType::Constant => {
                 self.skip_token();
 
                 let value = current.value.parse::<u64>().unwrap_or_else(|err| {
                     self.error(AssemblyError::ConstantParseError {
-                        const_type: format!("u64"),
+                        const_type: "u64".to_string(),
                         parser_error: err.to_string(),
                         src: self.src.clone(),
-                        span: current.span
+                        span: current.span,
                     });
 
                     0
                 });
 
-                return Expression::UIntConstant(value, current.span)
-            },
+                Expression::UIntConstant(value, current.span)
+            }
 
             TokenType::StringConstant => {
                 self.skip_token();
 
-                return Expression::StringConstant(current.value, current.span)
-            },
+                Expression::StringConstant(current.value, current.span)
+            }
 
             TokenType::AsmConstant => {
                 self.skip_token();
 
-                let value = current.value.strip_prefix("$").unwrap_or(current.value.as_str());
-                return Expression::AsmConstant(value.to_string(), current.span);
-            },
+                let value = current
+                    .value
+                    .strip_prefix("$")
+                    .unwrap_or(current.value.as_str());
+                Expression::AsmConstant(value.to_string(), current.span)
+            }
 
             TokenType::AsmReg => {
                 self.skip_token();
 
-                let value = current.value.strip_prefix("%").unwrap_or(current.value.as_str());
-                return Expression::AsmReg(value.to_string(), current.span);
-            },
+                let value = current
+                    .value
+                    .strip_prefix("%")
+                    .unwrap_or(current.value.as_str());
+                Expression::AsmReg(value.to_string(), current.span)
+            }
 
             TokenType::CurrentPtr => {
                 self.skip_token();
-                return Expression::CurrentPtr(current.span);
+                Expression::CurrentPtr(current.span)
             }
 
-            _ => Expression::None
+            _ => Expression::None,
         }
     }
 
@@ -182,138 +202,136 @@ impl<'tokens> Parser<'tokens> {
                             return Expression::Instruction {
                                 name: current.value,
                                 args,
-                                span: current.span
-                            }
-                        }
-
-                        // 1 argument instructions
-                        "call" | "int" | "push8" | "push16" | "push32" |
-                        "push64" | "pop8" | "pop16" | "pop32" | "pop64" |
-                        "jmp" | "jz" | "jnz" => {
-                            let last_arg = self.expression();
-                            let last_arg_span = last_arg.get_span();
-
-                            args.push(last_arg);
-
-                            return Expression::Instruction {
-                                name: current.value,
-                                args,
-                                span: error::position_to_span(
-                                    current.span.offset(),
-                                    (last_arg_span.offset() + last_arg_span.len())
-                                )
-                            }
-                        }
-
-                        // 2 argument instructions
-                        "mov" | "frame8" | "frame16" | "frame32" | "frame64" |
-                        "peek8" | "peek16" | "peek32" | "peek64" | "add" | "xadd" |
-                        "sub" | "mul" | "div" | "cmp" | "je" | "jne" => {
-                            args.push(self.expression());
-
-                            if let Err(err) = self.skip_expected(TokenType::Comma) {
-                                self.error(err);
-
-                                self.skip_token();
-                                self.skip_token();
-
-                                return Expression::None;
-                            }
-
-                            let last_arg = self.expression();
-                            let last_arg_span = last_arg.get_span();
-
-                            args.push(last_arg);
-
-                            return Expression::Instruction {
-                                name: current.value,
-                                args,
-                                span: error::position_to_span(
-                                    current.span.offset(),
-                                    (last_arg_span.offset() + last_arg_span.len())
-                                )
+                                span: current.span,
                             };
                         }
 
-                        _ => unimplemented!()
+                        // 1 argument instructions
+                        "call" | "int" | "push8" | "push16" | "push32" | "push64" | "pop8"
+                        | "pop16" | "pop32" | "pop64" | "jmp" | "jz" | "jnz" => {
+                            let last_arg = self.expression();
+                            let last_arg_span = last_arg.get_span();
+
+                            args.push(last_arg);
+
+                            return Expression::Instruction {
+                                name: current.value,
+                                args,
+                                span: error::position_to_span(
+                                    current.span.offset(),
+                                    last_arg_span.offset() + last_arg_span.len(),
+                                ),
+                            };
+                        }
+
+                        // 2 argument instructions
+                        "mov" | "frame8" | "frame16" | "frame32" | "frame64" | "peek8"
+                        | "peek16" | "peek32" | "peek64" | "add" | "xadd" | "sub" | "mul"
+                        | "div" | "cmp" | "je" | "jne" => {
+                            args.push(self.expression());
+
+                            if let Err(err) = self.skip_expected(TokenType::Comma) {
+                                self.error(*err);
+
+                                self.skip_token();
+                                self.skip_token();
+
+                                return Expression::None;
+                            }
+
+                            let last_arg = self.expression();
+                            let last_arg_span = last_arg.get_span();
+
+                            args.push(last_arg);
+
+                            return Expression::Instruction {
+                                name: current.value,
+                                args,
+                                span: error::position_to_span(
+                                    current.span.offset(),
+                                    last_arg_span.offset() + last_arg_span.len(),
+                                ),
+                            };
+                        }
+
+                        _ => unimplemented!(),
                     }
                 }
 
-                TokenType::Keyword => {
-                    match current.value.as_str() {
-                        "section" => {
-                            let identifier = self.next_token().clone();
+                TokenType::Keyword => match current.value.as_str() {
+                    "section" => {
+                        let identifier = self.next_token().clone();
 
-                            if !self.expect(TokenType::Identifier) {
-                                self.error(AssemblyError::UnexpectedToken {
-                                    expected: TokenType::Identifier.to_string().to_lowercase(),
-                                    found: identifier.token_type.to_string().to_lowercase(),
-                                    src: self.src.clone(),
-                                    span: identifier.span
-                                });
-                                self.skip_token();
-                                return Expression::None;
-                            }
-                            
+                        if !self.expect(TokenType::Identifier) {
+                            self.error(AssemblyError::UnexpectedToken {
+                                expected: TokenType::Identifier.to_string().to_lowercase(),
+                                found: identifier.token_type.to_string().to_lowercase(),
+                                src: self.src.clone(),
+                                span: identifier.span,
+                            });
                             self.skip_token();
-                            let span_end = identifier.span.offset() + identifier.span.len();
+                            return Expression::None;
+                        }
 
-                            return Expression::SectionDef {
-                                id: identifier.value,
-                                span: error::position_to_span(expr_offset, span_end)
-                            }
-                        },
-                        "entry" => {
-                            let identifier = self.next_token().clone();
+                        self.skip_token();
+                        let span_end = identifier.span.offset() + identifier.span.len();
 
-                            if !self.expect(TokenType::Identifier) {
-                                self.error(AssemblyError::UnexpectedToken {
-                                    expected: TokenType::Identifier.to_string().to_lowercase(),
-                                    found: identifier.token_type.to_string().to_lowercase(),
-                                    src: self.src.clone(),
-                                    span: identifier.span
-                                });
-                                self.skip_token();
-                                return Expression::None;
-                            }
-                            
-                            self.skip_token();
-                            let span_end = identifier.span.offset() + identifier.span.len();
-
-                            return Expression::EntryDef {
-                                label: identifier.value,
-                                span: error::position_to_span(expr_offset, span_end)
-                            }
-                        },
-                        "ascii" => {
-                            let str_constant = self.next_token().clone();
-
-                            if !self.expect(TokenType::StringConstant) {
-                                self.error(AssemblyError::UnexpectedToken {
-                                    expected: TokenType::StringConstant.to_string().to_lowercase(),
-                                    found: str_constant.token_type.to_string().to_lowercase(),
-                                    src: self.src.clone(),
-                                    span: str_constant.span
-                                });
-                                self.skip_token();
-                                return Expression::None;
-                            }
-
-                            self.skip_token();
-                            let span_end = str_constant.span.offset() + str_constant.span.len();
-
-                            return Expression::Directive {
-                                directive: String::from("ascii"),
-                                args: vec![
-                                    Expression::StringConstant(str_constant.value, str_constant.span)
-                                ],
-                                span: error::position_to_span(expr_offset, span_end)
-                            }
-                        },
-
-                        _ => unimplemented!()
+                        return Expression::SectionDef {
+                            id: identifier.value,
+                            span: error::position_to_span(expr_offset, span_end),
+                        };
                     }
-                }
+                    "entry" => {
+                        let identifier = self.next_token().clone();
+
+                        if !self.expect(TokenType::Identifier) {
+                            self.error(AssemblyError::UnexpectedToken {
+                                expected: TokenType::Identifier.to_string().to_lowercase(),
+                                found: identifier.token_type.to_string().to_lowercase(),
+                                src: self.src.clone(),
+                                span: identifier.span,
+                            });
+                            self.skip_token();
+                            return Expression::None;
+                        }
+
+                        self.skip_token();
+                        let span_end = identifier.span.offset() + identifier.span.len();
+
+                        return Expression::EntryDef {
+                            label: identifier.value,
+                            span: error::position_to_span(expr_offset, span_end),
+                        };
+                    }
+                    "ascii" => {
+                        let str_constant = self.next_token().clone();
+
+                        if !self.expect(TokenType::StringConstant) {
+                            self.error(AssemblyError::UnexpectedToken {
+                                expected: TokenType::StringConstant.to_string().to_lowercase(),
+                                found: str_constant.token_type.to_string().to_lowercase(),
+                                src: self.src.clone(),
+                                span: str_constant.span,
+                            });
+                            self.skip_token();
+                            return Expression::None;
+                        }
+
+                        self.skip_token();
+                        let span_end = str_constant.span.offset() + str_constant.span.len();
+
+                        return Expression::Directive {
+                            directive: String::from("ascii"),
+                            args: vec![Expression::StringConstant(
+                                str_constant.value,
+                                str_constant.span,
+                            )],
+                            span: error::position_to_span(expr_offset, span_end),
+                        };
+                    }
+
+                    _ => unimplemented!(),
+                },
 
                 TokenType::Label => {
                     self.skip_token();
@@ -322,8 +340,8 @@ impl<'tokens> Parser<'tokens> {
 
                     return Expression::LabelDef {
                         id: value.to_string(),
-                        span: current.span
-                    }
+                        span: current.span,
+                    };
                 }
 
                 TokenType::LBrack => {
@@ -333,31 +351,33 @@ impl<'tokens> Parser<'tokens> {
                     let expr = self.expression();
                     let expr_length = expr.get_span().len() + 2;
 
-                    self.skip_expected(TokenType::RBrack);
+                    self.skip_expected(TokenType::RBrack).unwrap_or_else(|err| {
+                        self.error(*err);
+                    });
 
                     return Expression::ComptimeExpr {
                         expr: Box::new(expr),
-                        span: (expr_start, expr_length).into()
-                    }
-                },
+                        span: (expr_start, expr_length).into(),
+                    };
+                }
 
-                TokenType::EOF => {
+                TokenType::Eof => {
                     self.eof = true;
                     Expression::None
-                },
+                }
 
                 _ => {
                     self.skip_token();
 
                     self.error(AssemblyError::UnknownExpression {
-                        error: format!("Unknown expression found"),
+                        error: "Unknown expression found".to_string(),
                         src: self.src.clone(),
-                        span: current.span
+                        span: current.span,
                     });
 
                     Expression::None
                 }
-            }
+            };
         }
 
         // expressions with non-none nodes
@@ -366,10 +386,10 @@ impl<'tokens> Parser<'tokens> {
             TokenType::Operator => {
                 if !BINARY_OPERATORS.contains(&current.value.as_str()) {
                     self.error(AssemblyError::UnsupportedExpression {
-                        error: format!("Unsupported expression with operator found"),
+                        error: "Unsupported expression with operator found".to_string(),
                         label: format!("operator {} is not supported", current.value),
                         src: self.src.clone(),
-                        span: current.span
+                        span: current.span,
                     });
                 }
 
@@ -386,13 +406,7 @@ impl<'tokens> Parser<'tokens> {
                     let new_node = rhs.clone();
                     let old_lhs = lhs.clone();
 
-                    if let Expression::BinaryExpr {
-                        op,
-                        lhs,
-                        rhs,
-                        span,
-                    } = *new_node
-                    {
+                    if let Expression::BinaryExpr { op, lhs, rhs, span } = *new_node {
                         let lhs_new = old_lhs;
                         let rhs_new = lhs;
 
@@ -412,28 +426,28 @@ impl<'tokens> Parser<'tokens> {
                     }
                 }
 
-                return Expression::BinaryExpr {
+                Expression::BinaryExpr {
                     op,
                     lhs,
                     rhs,
-                    span: error::position_to_span(expr_offset, span_end)
-                };
+                    span: error::position_to_span(expr_offset, span_end),
+                }
             }
 
-            TokenType::EOF => {
+            TokenType::Eof => {
                 self.eof = true;
                 node
-            },
+            }
 
-            _ => node
+            _ => node,
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::assembly::lexer::Lexer;
     use super::*;
+    use crate::assembly::lexer::Lexer;
 
     #[test]
     fn parser_section_def_test() {
@@ -448,15 +462,10 @@ mod tests {
 
         assert_eq!(
             ast,
-            [
-                Expression::SectionDef {
-                    id: String::from(".data"),
-                    span: (
-                        0,
-                        "section .data".len()
-                    ).into()
-                }
-            ]
+            [Expression::SectionDef {
+                id: String::from(".data"),
+                span: (0, "section .data".len()).into()
+            }]
         );
     }
 
@@ -473,15 +482,10 @@ mod tests {
 
         assert_eq!(
             ast,
-            [
-                Expression::EntryDef {
-                    label: String::from("_start"),
-                    span: (
-                        0,
-                        "entry _start".len()
-                    ).into()
-                }
-            ]
+            [Expression::EntryDef {
+                label: String::from("_start"),
+                span: (0, "entry _start".len()).into()
+            }]
         );
     }
 
@@ -498,15 +502,10 @@ mod tests {
 
         assert_eq!(
             ast,
-            [
-                Expression::LabelDef {
-                    id: String::from("label_def"),
-                    span: (
-                        0,
-                        "label_def:".len()
-                    ).into()
-                }
-            ]
+            [Expression::LabelDef {
+                id: String::from("label_def"),
+                span: (0, "label_def:".len()).into()
+            }]
         );
     }
 
@@ -523,21 +522,14 @@ mod tests {
 
         assert_eq!(
             ast,
-            [
-                Expression::Directive {
-                    directive: String::from("ascii"),
-                    args: vec![
-                        Expression::StringConstant(
-                            String::from("hello"),
-                            (6, "\"hello\"".len()).into()
-                        )
-                    ],
-                    span: (
-                        0,
-                        CODE.len()
-                    ).into()
-                }
-            ]
+            [Expression::Directive {
+                directive: String::from("ascii"),
+                args: vec![Expression::StringConstant(
+                    String::from("hello"),
+                    (6, "\"hello\"".len()).into()
+                )],
+                span: (0, CODE.len()).into()
+            }]
         );
     }
 
@@ -554,20 +546,15 @@ mod tests {
 
         assert_eq!(
             ast,
-            [
-                Expression::ComptimeExpr {
-                    expr: Box::new(Expression::BinaryExpr {
-                        op: String::from("+"),
-                        lhs: Box::new(Expression::CurrentPtr((1, 1).into())),
-                        rhs: Box::new(Expression::UIntConstant(1, (5, 2).into())),
-                        span: (1, ". + $1".len()).into()
-                    }),
-                    span: (
-                        0,
-                        CODE.len()
-                    ).into()
-                }
-            ]
+            [Expression::ComptimeExpr {
+                expr: Box::new(Expression::BinaryExpr {
+                    op: String::from("+"),
+                    lhs: Box::new(Expression::CurrentPtr((1, 1).into())),
+                    rhs: Box::new(Expression::UIntConstant(1, (5, 2).into())),
+                    span: (1, ". + $1".len()).into()
+                }),
+                span: (0, CODE.len()).into()
+            }]
         );
     }
 
@@ -584,13 +571,11 @@ mod tests {
 
         assert_eq!(
             ast,
-            [
-                Expression::Instruction {
-                    name: String::from("halt"),
-                    args: Vec::new(),
-                    span: (0, 4).into()
-                }
-            ]
+            [Expression::Instruction {
+                name: String::from("halt"),
+                args: Vec::new(),
+                span: (0, 4).into()
+            }]
         );
     }
 
@@ -607,18 +592,11 @@ mod tests {
 
         assert_eq!(
             ast,
-            [
-                Expression::Instruction {
-                    name: String::from("int"),
-                    args: vec![
-                        Expression::UIntConstant(80, (4, "$80".len()).into())
-                    ],
-                    span: (
-                        0,
-                        CODE.len()
-                    ).into()
-                }
-            ]
+            [Expression::Instruction {
+                name: String::from("int"),
+                args: vec![Expression::UIntConstant(80, (4, "$80".len()).into())],
+                span: (0, CODE.len()).into()
+            }]
         );
     }
 
@@ -635,19 +613,14 @@ mod tests {
 
         assert_eq!(
             ast,
-            [
-                Expression::Instruction {
-                    name: String::from("mov"),
-                    args: vec![
-                        Expression::AsmReg(String::from("r0"), (4, "%r0".len()).into()),
-                        Expression::UIntConstant(123, (9, "$123".len()).into())
-                    ],
-                    span: (
-                        0,
-                        CODE.len()
-                    ).into()
-                }
-            ]
+            [Expression::Instruction {
+                name: String::from("mov"),
+                args: vec![
+                    Expression::AsmReg(String::from("r0"), (4, "%r0".len()).into()),
+                    Expression::UIntConstant(123, (9, "$123".len()).into())
+                ],
+                span: (0, CODE.len()).into()
+            }]
         );
     }
 
@@ -662,12 +635,7 @@ mod tests {
         let mut parser = Parser::new(FILENAME, CODE, &tokens);
         let ast = parser.parse().unwrap();
 
-        assert_eq!(
-            ast,
-            [
-                Expression::UIntConstant(123, (0, 4).into())
-            ]
-        );
+        assert_eq!(ast, [Expression::UIntConstant(123, (0, 4).into())]);
     }
 
     #[test]
@@ -683,9 +651,10 @@ mod tests {
 
         assert_eq!(
             ast,
-            [
-                Expression::StringConstant(String::from("hello, world!"), (0, CODE.len()).into())
-            ]
+            [Expression::StringConstant(
+                String::from("hello, world!"),
+                (0, CODE.len()).into()
+            )]
         );
     }
 
@@ -702,9 +671,10 @@ mod tests {
 
         assert_eq!(
             ast,
-            [
-                Expression::AsmConstant(String::from("syscall"), (0, CODE.len()).into())
-            ]
+            [Expression::AsmConstant(
+                String::from("syscall"),
+                (0, CODE.len()).into()
+            )]
         );
     }
 
@@ -742,9 +712,10 @@ mod tests {
 
         assert_eq!(
             ast,
-            [
-                Expression::LabelRef(String::from("label_ref"), (0, "label_ref".len()).into())
-            ]
+            [Expression::LabelRef(
+                String::from("label_ref"),
+                (0, "label_ref".len()).into()
+            )]
         );
     }
 
@@ -759,11 +730,6 @@ mod tests {
         let mut parser = Parser::new(FILENAME, CODE, &tokens);
         let ast = parser.parse().unwrap();
 
-        assert_eq!(
-            ast,
-            [
-                Expression::CurrentPtr((0, 1).into())
-            ]
-        );
+        assert_eq!(ast, [Expression::CurrentPtr((0, 1).into())]);
     }
 }

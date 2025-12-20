@@ -1,4 +1,4 @@
-use miette::{Diagnostic, NamedSource, SourceSpan};
+use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
 use super::Source;
@@ -10,40 +10,30 @@ pub fn position_to_span(from: usize, to: usize) -> SourceSpan {
 #[derive(Debug, Error, Diagnostic)]
 pub enum AssemblyError {
     // Lexer Errors
-
     #[error("Unknown character found: '{character}'")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::unknown_character),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::unknown_character))]
     UnknownCharacter {
         character: char,
 
         #[source_code]
         src: Source,
         #[label("unknown character")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     #[error("Unknown character escape found: '\\{escape}'")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::unknown_character_escape),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::unknown_character_escape))]
     UnknownCharacterEscape {
         escape: char,
 
         #[source_code]
         src: Source,
         #[label("unknown character escape")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     #[error("{error}")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::constant_error),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::constant_error))]
     InvalidConstant {
         error: String,
         label: String,
@@ -51,14 +41,11 @@ pub enum AssemblyError {
         #[source_code]
         src: Source,
         #[label("{label}")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     #[error("Number parser returned an error: {parser_error}")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::number_parse_error),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::number_parse_error))]
     ConstantParseError {
         const_type: String,
         parser_error: String,
@@ -66,16 +53,12 @@ pub enum AssemblyError {
         #[source_code]
         src: Source,
         #[label("constant type: {const_type}")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     // Parser Errors
-    
     #[error("expected `{expected}` token, but found `{found}`")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::unexpected_token),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::unexpected_token))]
     UnexpectedToken {
         expected: String,
         found: String,
@@ -83,29 +66,22 @@ pub enum AssemblyError {
         #[source_code]
         src: Source,
         #[label("this token expected to be `{expected}`")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     #[error("{error}")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::unexpected_token),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::unexpected_token))]
     UnknownExpression {
         error: String,
 
         #[source_code]
         src: Source,
         #[label("verify this token")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
-
     #[error("{error}")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::unsupported_expression),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::unsupported_expression))]
     UnsupportedExpression {
         error: String,
         label: String,
@@ -113,44 +89,34 @@ pub enum AssemblyError {
         #[source_code]
         src: Source,
         #[label("{label}")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     // Semantic Errors
-
     #[error("Unknown section definition found")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::unknown_section),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::unknown_section))]
     UnknownSection {
         name: String,
 
         #[source_code]
         src: Source,
         #[label("section `{name}` is invalid")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     #[error("Section placement is invalid")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::invalid_section_placement),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::invalid_section_placement))]
     InvalidSectionPlacement {
         label: String,
 
         #[source_code]
         src: Source,
         #[label("{label}")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     #[error("Label `{name}` is already defined in code")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::label_redefinition),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::label_redefinition))]
     LabelRedefinition {
         name: String,
 
@@ -164,24 +130,18 @@ pub enum AssemblyError {
     },
 
     #[error("Label `{name}` is not defined")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::unknown_label),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::unknown_label))]
     UnknownLabel {
         name: String,
 
         #[source_code]
         src: Source,
         #[label("could not find `{name}` label")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     #[error("Directive `{name}` usage is invalid")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::invalid_directive),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::invalid_directive))]
     InvalidDirective {
         name: String,
         label: String,
@@ -189,14 +149,11 @@ pub enum AssemblyError {
         #[source_code]
         src: Source,
         #[label("{label}")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     #[error("{error}")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::comptime_exception),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::comptime_exception))]
     ComptimeException {
         error: String,
         label: String,
@@ -204,34 +161,28 @@ pub enum AssemblyError {
         #[source_code]
         src: Source,
         #[label("{label}")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     #[error("This action is not allowed semantically")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::not_allowed),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::not_allowed))]
     NotAllowed {
         label: String,
 
         #[source_code]
         src: Source,
         #[label("{label}")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 
     #[error("Instruction argument is invalid")]
-    #[diagnostic(
-        severity(Error),
-        code(mvm::asm::invalid_argument),
-    )]
+    #[diagnostic(severity(Error), code(mvm::asm::invalid_argument))]
     InvalidArgument {
         label: String,
 
         #[source_code]
         src: Source,
         #[label("{label}")]
-        span: SourceSpan
+        span: SourceSpan,
     },
 }

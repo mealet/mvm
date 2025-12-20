@@ -1,8 +1,4 @@
-use super::{
-    Source,
-    parser::expressions::Expression,
-    error::{self, AssemblyError},
-};
+use super::{Source, error::AssemblyError, parser::expressions::Expression};
 
 use miette::{NamedSource, SourceSpan};
 use std::collections::HashMap;
@@ -25,7 +21,7 @@ pub struct Analyzer {
 pub enum Section {
     Data,
     Text,
-    None
+    None,
 }
 
 impl TryFrom<&str> for Section {
@@ -35,7 +31,7 @@ impl TryFrom<&str> for Section {
         match value {
             "data" | ".data" => Ok(Section::Data),
             "text" | ".text" => Ok(Section::Text),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }
@@ -54,20 +50,19 @@ impl Analyzer {
 
     pub fn analyze(&mut self, ast: &[Expression]) -> Result<(), &[AssemblyError]> {
         // analyzing all labels definitions
-        ast
-            .into_iter()
+        ast.iter()
             .filter(|expr| matches!(expr, Expression::LabelDef { .. }))
             .for_each(|expr| self.visit_expression(expr));
 
         self.labels_analyzed = true;
 
-        ast.into_iter().for_each(|expr| self.visit_expression(expr));
+        ast.iter().for_each(|expr| self.visit_expression(expr));
 
         if !self.errors.is_empty() {
-            return Err(&self.errors)
+            return Err(&self.errors);
         }
 
-        return Ok(())
+        Ok(())
     }
 
     fn error(&mut self, error: AssemblyError) {
@@ -78,47 +73,43 @@ impl Analyzer {
 impl Analyzer {
     fn visit_expression(&mut self, expression: &Expression) {
         match expression {
-            Expression::SectionDef { id, span } => {
-                match Section::try_from(id.as_str()) {
-                    Ok(section) => {
-                        if self.section == Section::Text {
-                            self.error(AssemblyError::InvalidSectionPlacement {
-                                label: format!("section `{}` must be placed before `.text`", id),
-                                src: self.src.clone(),
-                                span: *span
-                            });
-                            return;
-                        }
-
-                        if self.section == Section::None
-                        && section == Section::Text {
-                            self.error(AssemblyError::InvalidSectionPlacement {
-                                label: format!("compiler requires `.data` section before `.text`"),
-                                src: self.src.clone(),
-                                span: *span
-                            });
-                            return;
-                        }
-
-                        self.section = section;
-                    },
-                    Err(_) => {
-                        self.error(AssemblyError::UnknownSection {
-                            name: id.clone(),
+            Expression::SectionDef { id, span } => match Section::try_from(id.as_str()) {
+                Ok(section) => {
+                    if self.section == Section::Text {
+                        self.error(AssemblyError::InvalidSectionPlacement {
+                            label: format!("section `{}` must be placed before `.text`", id),
                             src: self.src.clone(),
-                            span: *span
+                            span: *span,
                         });
                         return;
                     }
+
+                    if self.section == Section::None && section == Section::Text {
+                        self.error(AssemblyError::InvalidSectionPlacement {
+                            label: "compiler requires `.data` section before `.text`".to_string(),
+                            src: self.src.clone(),
+                            span: *span,
+                        });
+                        return;
+                    }
+
+                    self.section = section;
                 }
-            }
+                Err(_) => {
+                    self.error(AssemblyError::UnknownSection {
+                        name: id.clone(),
+                        src: self.src.clone(),
+                        span: *span,
+                    });
+                }
+            },
 
             Expression::EntryDef { label, span } => {
                 if self.section != Section::Text {
                     self.error(AssemblyError::NotAllowed {
-                        label: format!("entry label must be placed in `.text` section"),
+                        label: "entry label must be placed in `.text` section".to_string(),
                         src: self.src.clone(),
-                        span: *span
+                        span: *span,
                     });
                 }
 
@@ -126,20 +117,22 @@ impl Analyzer {
                     self.error(AssemblyError::UnknownLabel {
                         name: label.clone(),
                         src: self.src.clone(),
-                        span: *span
+                        span: *span,
                     });
                 }
             }
 
             Expression::LabelDef { id, span } => {
-                if self.labels_analyzed { return };
+                if self.labels_analyzed {
+                    return;
+                };
 
                 if let Some(original_span) = self.labels.get(id) {
                     self.error(AssemblyError::LabelRedefinition {
                         name: id.clone(),
                         src: self.src.clone(),
                         redefinition: *span,
-                        original: *original_span
+                        original: *original_span,
                     });
                     return;
                 }
@@ -147,33 +140,42 @@ impl Analyzer {
                 self.labels.insert(id.clone(), *span);
             }
 
-            Expression::Directive { directive, args, span } => {
+            Expression::Directive {
+                directive,
+                args,
+                span,
+            } => {
                 match directive.as_str() {
                     "ascii" => {
                         // this arguments must be verified in parser
                         assert!(args.len() == 1);
-                        assert!(matches!(args.get(0), Some(Expression::StringConstant(_, _))));
+                        assert!(matches!(
+                            args.first(),
+                            Some(Expression::StringConstant(_, _))
+                        ));
 
                         if self.section != Section::Data {
                             self.error(AssemblyError::InvalidDirective {
                                 name: directive.to_owned(),
-                                label: format!("must be placed in `.data` section"),
+                                label: "must be placed in `.data` section".to_string(),
                                 src: self.src.clone(),
-                                span: *span
+                                span: *span,
                             })
                         }
-                    },
+                    }
 
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 }
             }
 
             Expression::ComptimeExpr { expr, span } => {
                 if self.section != Section::Data {
                     self.error(AssemblyError::NotAllowed {
-                        label: String::from("comptime expressions are allowed only in `.data` section"),
+                        label: String::from(
+                            "comptime expressions are allowed only in `.data` section",
+                        ),
                         src: self.src.clone(),
-                        span: *span
+                        span: *span,
                     });
                 }
 
@@ -185,59 +187,91 @@ impl Analyzer {
                 self.comptime_mode = prev_mode;
             }
 
-            Expression::Instruction { name, args, span } => {
+            Expression::Instruction {
+                name,
+                args,
+                span: _,
+            } => {
                 // arguments lengths are verified in parser
 
                 match name.as_str() {
-                    "call" => macros::assert_arg!(self, "label", args.get(0).unwrap(), Expression::LabelRef(_, _)),
+                    "call" => macros::assert_arg!(
+                        self,
+                        "label",
+                        args.first().unwrap(),
+                        Expression::LabelRef(_, _)
+                    ),
                     "int" => {
-                        let arg = args.get(0).unwrap();
+                        let arg = args.first().unwrap();
 
-                        macros::assert_arg!(self, "u8", arg, Expression::UIntConstant(_, _) | Expression::AsmConstant(_, _));
+                        macros::assert_arg!(
+                            self,
+                            "u8",
+                            arg,
+                            Expression::UIntConstant(_, _) | Expression::AsmConstant(_, _)
+                        );
 
                         if let Expression::UIntConstant(value, span) = arg {
                             macros::verify_boundary!(self, *value, *span, u8);
                         }
-                    },
+                    }
 
                     "mov" => {
                         assert!(args.len() == 2);
 
-                        let dest = args.get(0).unwrap();
+                        let dest = args.first().unwrap();
                         let src = args.get(1).unwrap();
 
                         // mov %reg, ...
                         if matches!(dest, Expression::AsmReg(_, _)) {
-                            if !matches!(src, Expression::UIntConstant(_, _) | Expression::AsmReg(_, _) | Expression::LabelRef(_, _)) {
+                            if !matches!(
+                                src,
+                                Expression::UIntConstant(_, _)
+                                    | Expression::AsmReg(_, _)
+                                    | Expression::LabelRef(_, _)
+                            ) {
                                 self.error(AssemblyError::InvalidArgument {
-                                    label: format!("this expected to be number/register/label"),
+                                    label: "this expected to be number/register/label".to_string(),
                                     src: self.src.clone(),
-                                    span: src.get_span()
+                                    span: src.get_span(),
                                 });
                             }
 
                             return;
                         }
-                        
+
                         // mov address, ...
-                        if matches!(dest, Expression::UIntConstant(_, _) | Expression::LabelRef(_, _)) {
+                        if matches!(
+                            dest,
+                            Expression::UIntConstant(_, _) | Expression::LabelRef(_, _)
+                        ) {
                             macros::assert_arg!(self, "register", src, Expression::AsmReg(_, _));
 
                             return;
                         }
 
                         self.error(AssemblyError::InvalidArgument {
-                            label: format!("destination expected to be register/address"),
+                            label: "destination expected to be register/address".to_string(),
                             src: self.src.clone(),
-                            span: dest.get_span()
+                            span: dest.get_span(),
                         });
                     }
 
-                    "push8" | "push16" | "push32" | "push64" => macros::assert_arg!(self, "register", args.get(0).unwrap(), Expression::AsmReg(_, _)),
-                    "pop8" | "pop16" | "pop32" | "pop64" => macros::assert_arg!(self, "register", args.get(0).unwrap(), Expression::AsmReg(_, _)),
+                    "push8" | "push16" | "push32" | "push64" => macros::assert_arg!(
+                        self,
+                        "register",
+                        args.first().unwrap(),
+                        Expression::AsmReg(_, _)
+                    ),
+                    "pop8" | "pop16" | "pop32" | "pop64" => macros::assert_arg!(
+                        self,
+                        "register",
+                        args.first().unwrap(),
+                        Expression::AsmReg(_, _)
+                    ),
 
                     "frame8" | "frame16" | "frame32" | "frame64" => {
-                        let dest = args.get(0).unwrap();
+                        let dest = args.first().unwrap();
                         let address = args.get(1).unwrap();
 
                         macros::assert_arg!(self, "register", dest, Expression::AsmReg(_, _));
@@ -246,10 +280,10 @@ impl Analyzer {
                         if let Expression::UIntConstant(value, span) = address {
                             macros::verify_boundary!(self, *value, *span, u16);
                         }
-                    },
+                    }
 
                     "peek8" | "peek16" | "peek32" | "peek64" => {
-                        let dest = args.get(0).unwrap();
+                        let dest = args.first().unwrap();
                         let address = args.get(1).unwrap();
 
                         macros::assert_arg!(self, "register", dest, Expression::AsmReg(_, _));
@@ -258,38 +292,43 @@ impl Analyzer {
                         if let Expression::UIntConstant(value, span) = address {
                             macros::verify_boundary!(self, *value, *span, u16);
                         }
-                    },
+                    }
 
                     "add" | "sub" | "mul" | "div" | "cmp" => {
-                        let dest = args.get(0).unwrap();
+                        let dest = args.first().unwrap();
                         let src = args.get(1).unwrap();
 
                         macros::assert_arg!(self, "register", dest, Expression::AsmReg(_, _));
 
-                        if !matches!(src, Expression::UIntConstant(_, _) | Expression::AsmReg(_, _) | Expression::LabelRef(_, _)) {
+                        if !matches!(
+                            src,
+                            Expression::UIntConstant(_, _)
+                                | Expression::AsmReg(_, _)
+                                | Expression::LabelRef(_, _)
+                        ) {
                             self.error(AssemblyError::InvalidArgument {
-                                label: format!("this expected to be number/register/label"),
+                                label: "this expected to be number/register/label".to_string(),
                                 src: self.src.clone(),
-                                span: src.get_span()
+                                span: src.get_span(),
                             });
                         }
                     }
 
                     "xadd" => {
-                        let dest = args.get(0).unwrap();
+                        let dest = args.first().unwrap();
                         let src = args.get(1).unwrap();
 
                         macros::assert_arg!(self, "register", dest, Expression::AsmReg(_, _));
                         macros::assert_arg!(self, "register", src, Expression::AsmReg(_, _));
-                    },
+                    }
 
                     "jmp" | "jz" | "jnz" => {
-                        let label = args.get(0).unwrap();
+                        let label = args.first().unwrap();
                         macros::assert_arg!(self, "label", label, Expression::LabelRef(_, _));
-                    },
+                    }
 
                     "je" | "jne" => {
-                        let value = args.get(0).unwrap();
+                        let value = args.first().unwrap();
                         let label = args.get(1).unwrap();
 
                         macros::assert_arg!(self, "u64", value, Expression::UIntConstant(_, _));
@@ -300,13 +339,22 @@ impl Analyzer {
                 }
             }
 
-            Expression::BinaryExpr { op, lhs, rhs, span } => {
+            Expression::BinaryExpr {
+                op: _,
+                lhs,
+                rhs,
+                span,
+            } => {
                 if !self.comptime_mode {
                     self.error(AssemblyError::ComptimeException {
-                        error: String::from("Usage of comptime expression without compile time mode"),
-                        label: format!("binary expressions are allowed only in compile time mode: \"[EXPR]\""),
+                        error: String::from(
+                            "Usage of comptime expression without compile time mode",
+                        ),
+                        label:
+                            "binary expressions are allowed only in compile time mode: \"[EXPR]\""
+                                .to_string(),
                         src: self.src.clone(),
-                        span: *span
+                        span: *span,
                     });
                     return;
                 }
@@ -315,25 +363,22 @@ impl Analyzer {
                 self.visit_expression(rhs);
             }
 
-            Expression::UIntConstant(_, _) => {},
-            Expression::StringConstant(_, span) => {
-                self.error(AssemblyError::NotAllowed {
-                    label: String::from("string constants are not allowed without directives"),
-                    src: self.src.clone(),
-                    span: *span
-                })
-            },
+            Expression::UIntConstant(_, _) => {}
+            Expression::StringConstant(_, span) => self.error(AssemblyError::NotAllowed {
+                label: String::from("string constants are not allowed without directives"),
+                src: self.src.clone(),
+                span: *span,
+            }),
 
-            Expression::AsmConstant(_, _) => {},
+            Expression::AsmConstant(_, _) => {}
             Expression::AsmReg(_, span) => {
                 if self.comptime_mode {
                     self.error(AssemblyError::ComptimeException {
                         error: String::from("Runtime element found in compile time mode"),
                         label: String::from("registers values are unknown at compile time"),
                         src: self.src.clone(),
-                        span: *span
+                        span: *span,
                     });
-                    return;
                 }
             }
 
@@ -342,21 +387,22 @@ impl Analyzer {
                     self.error(AssemblyError::UnknownLabel {
                         name: label_name.clone(),
                         src: self.src.clone(),
-                        span: *span
+                        span: *span,
                     });
-                    return;
                 }
             }
 
             Expression::CurrentPtr(span) => {
                 if !self.comptime_mode {
                     self.error(AssemblyError::ComptimeException {
-                        error: String::from("Usage of comptime expression without compile time mode"),
-                        label: format!("current pointer is allowed only in comptime expression: \"[EXPR]\""),
+                        error: String::from(
+                            "Usage of comptime expression without compile time mode",
+                        ),
+                        label: "current pointer is allowed only in comptime expression: \"[EXPR]\""
+                            .to_string(),
                         src: self.src.clone(),
-                        span: *span
+                        span: *span,
                     });
-                    return;
                 }
             }
 

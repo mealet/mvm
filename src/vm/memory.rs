@@ -1,13 +1,13 @@
 use super::error::MvmError;
 
 pub struct MemoryBuffer {
-    pub inner: Vec<u8>
+    pub inner: Vec<u8>,
 }
 
 impl MemoryBuffer {
     pub fn new(size: usize) -> Self {
         Self {
-            inner: vec![0; size]
+            inner: vec![0; size],
         }
     }
 
@@ -50,12 +50,10 @@ impl MemoryBuffer {
             return Err(MvmError::SegmentationFault(address));
         }
 
-        Ok(
-            u16::from_be_bytes([
-                self.inner[address as usize],
-                self.inner[(address + 1) as usize]
-            ])
-        )
+        Ok(u16::from_be_bytes([
+            self.inner[address as usize],
+            self.inner[(address + 1) as usize],
+        ]))
     }
 
     pub fn set_u16(&mut self, address: u64, value: u16) -> Result<(), MvmError> {
@@ -69,11 +67,8 @@ impl MemoryBuffer {
 
         (
             self.inner[address as usize],
-            self.inner[(address + 1) as usize]
-        ) = (
-            bytes[0],
-            bytes[1]
-        );
+            self.inner[(address + 1) as usize],
+        ) = (bytes[0], bytes[1]);
 
         Ok(())
     }
@@ -87,14 +82,12 @@ impl MemoryBuffer {
             return Err(MvmError::SegmentationFault(address));
         }
 
-        Ok(
-            u32::from_be_bytes([
-                self.inner[address as usize],
-                self.inner[(address + 1) as usize],
-                self.inner[(address + 2) as usize],
-                self.inner[(address + 3) as usize],
-            ])
-        )
+        Ok(u32::from_be_bytes([
+            self.inner[address as usize],
+            self.inner[(address + 1) as usize],
+            self.inner[(address + 2) as usize],
+            self.inner[(address + 3) as usize],
+        ]))
     }
 
     pub fn set_u32(&mut self, address: u64, value: u32) -> Result<(), MvmError> {
@@ -111,12 +104,7 @@ impl MemoryBuffer {
             self.inner[(address + 1) as usize],
             self.inner[(address + 2) as usize],
             self.inner[(address + 3) as usize],
-        ) = (
-            bytes[0],
-            bytes[1],
-            bytes[2],
-            bytes[3]
-        );
+        ) = (bytes[0], bytes[1], bytes[2], bytes[3]);
 
         Ok(())
     }
@@ -130,18 +118,16 @@ impl MemoryBuffer {
             return Err(MvmError::SegmentationFault(address));
         }
 
-        Ok(
-            u64::from_be_bytes([
-                self.inner[address as usize],
-                self.inner[(address + 1) as usize],
-                self.inner[(address + 2) as usize],
-                self.inner[(address + 3) as usize],
-                self.inner[(address + 4) as usize],
-                self.inner[(address + 5) as usize],
-                self.inner[(address + 6) as usize],
-                self.inner[(address + 7) as usize],
-            ])
-        )
+        Ok(u64::from_be_bytes([
+            self.inner[address as usize],
+            self.inner[(address + 1) as usize],
+            self.inner[(address + 2) as usize],
+            self.inner[(address + 3) as usize],
+            self.inner[(address + 4) as usize],
+            self.inner[(address + 5) as usize],
+            self.inner[(address + 6) as usize],
+            self.inner[(address + 7) as usize],
+        ]))
     }
 
     pub fn set_u64(&mut self, address: u64, value: u64) -> Result<(), MvmError> {
@@ -163,14 +149,7 @@ impl MemoryBuffer {
             self.inner[(address + 6) as usize],
             self.inner[(address + 7) as usize],
         ) = (
-            bytes[0],
-            bytes[1],
-            bytes[2],
-            bytes[3],
-            bytes[4],
-            bytes[5],
-            bytes[6],
-            bytes[7],
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
         );
 
         Ok(())
@@ -196,7 +175,7 @@ mod tests {
 
         memory.set_u64(0, 1234567890)?;
         assert_eq!(memory.get_u64(0)?, 1234567890);
-        
+
         Ok(())
     }
 

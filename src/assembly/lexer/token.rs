@@ -4,7 +4,7 @@ use miette::SourceSpan;
 pub struct Token {
     pub value: String,
     pub token_type: TokenType,
-    pub span: SourceSpan
+    pub span: SourceSpan,
 }
 
 impl Token {
@@ -12,31 +12,31 @@ impl Token {
         Self {
             value,
             token_type,
-            span
+            span,
         }
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum TokenType {
-    Identifier,     // abc
-    Instruction,    // mov, jmp, ...
-    Keyword,        // section, entry, ...
-    Label,          // label:
-    CurrentPtr,     // .
-    
+    Identifier,  // abc
+    Instruction, // mov, jmp, ...
+    Keyword,     // section, entry, ...
+    Label,       // label:
+    CurrentPtr,  // .
+
     Constant,       // $123, $0xFF, $0b101
     StringConstant, // "hello"
     AsmConstant,    // $syscall, ...
     AsmReg,         // %r0, %r1, %call, ...
     Operator,       // +, -, *, /, %, !, ...
 
-    Comma,          // ,
-    LBrack,         // [
-    RBrack,         // ]
+    Comma,  // ,
+    LBrack, // [
+    RBrack, // ]
 
-    EOF,            // end of file
-    Undefined,      // undefined token type
+    Eof,       // end of file
+    Undefined, // undefined token type
 }
 
 impl std::fmt::Display for TokenType {

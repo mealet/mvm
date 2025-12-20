@@ -6,10 +6,7 @@ pub struct Label {
 
 impl Label {
     pub fn new(ptr: u64, data_section: bool) -> Self {
-        Self {
-            ptr,
-            data_section
-        }
+        Self { ptr, data_section }
     }
 }
 
@@ -26,7 +23,7 @@ impl Constant {
         if u8::try_from(value).is_ok() {
             return Self::U8(value as u8);
         }
-        
+
         if u16::try_from(value).is_ok() {
             return Self::U16(value as u16);
         }
@@ -35,6 +32,6 @@ impl Constant {
             return Self::U32(value as u32);
         }
 
-        return Self::U64(value);
+        Self::U64(value)
     }
 }

@@ -15,7 +15,7 @@ impl VM {
         let acc = self.get_register(R_ACCUMULATOR)?;
         self.set_register(R_ACCUMULATOR, acc.wrapping_add(1))?;
 
-        dbg!(self.get_register(R_ACCUMULATOR));
+        self.get_register(R_ACCUMULATOR)?;
 
         // return instruction
         self.pop_state()?;
@@ -24,7 +24,6 @@ impl VM {
 
     // system call
     fn handle_int80(&mut self) -> Result<(), MvmError> {
-
         match self.get_register(R_SYSTEM_CALL)? {
             // exit
             0 => {
@@ -37,24 +36,23 @@ impl VM {
                 let len = self.get_register(R2)? as usize;
 
                 let in_mem_buffer = self.get_register(R1)? as usize;
-                let buffer = unsafe {
-                    self.memory.inner.as_ptr().add(in_mem_buffer) as *const libc::c_void
-                };
+                let buffer =
+                    unsafe { self.memory.inner.as_ptr().add(in_mem_buffer) as *const libc::c_void };
 
-                self.set_register(R_ACCUMULATOR, unsafe { libc::write(fd, buffer, len) } as u64);
+                self.set_register(R_ACCUMULATOR, unsafe { libc::write(fd, buffer, len) }
+                    as u64)?;
             }
 
             unknown => {
                 return Err(MvmError::UnknownSystemCall(unknown));
             }
         }
-        
+
         // return instruction
         self.pop_state()?;
         Ok(())
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -64,12 +62,19 @@ mod tests {
     fn interrupt_0_test() -> Result<(), MvmError> {
         let mut vm = VM::new(256, 128)?;
 
-        vm.set_register(R_ACCUMULATOR, 0);
+        vm.set_register(R_ACCUMULATOR, 0)?;
 
         let program = [
             Opcode::DataSection as u8,
             // -- data section --
-            0, 0, 0, 0, 0, 0, 0, 0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
             // -- data section end --
             0xff,
             Opcode::TextSection as u8,
@@ -77,10 +82,16 @@ mod tests {
 
             // int $1
             Opcode::Interrupt as u8,
-            0, 0, 0, 0, 0, 0, 0, 1,
-
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
             // -- program end --
-            Opcode::Halt as u8
+            Opcode::Halt as u8,
         ];
 
         vm.insert_program(&program)?;

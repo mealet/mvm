@@ -43,7 +43,4 @@ pub enum MvmError {
 
     #[error("io module returned error")]
     IOError(#[from] std::io::Error),
-
-    #[error("unknown mvm error")]
-    Unknown
 }

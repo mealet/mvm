@@ -1,8 +1,8 @@
 use colored::Colorize;
 
+mod assembly;
 mod cli;
 mod vm;
-mod assembly;
 
 fn main() {
     // TODO: Add memory && stack size reader for MVM format
@@ -31,7 +31,7 @@ fn main() {
                 eprintln!("{}", "⚡ Mealet Virtual Machine".bold().red());
                 eprintln!("| - version: {version}");
                 eprintln!("| - authors: {authors_fmt}");
-                eprintln!("");
+                eprintln!();
                 eprintln!("{}", "🍀 Options:".bold().red());
 
                 let _ = cli::cli().print_help();
@@ -54,7 +54,9 @@ fn main() {
         Some(("compile", sub_matches)) => {
             cli::info("Reading", "source code");
 
-            let path_to_asm = sub_matches.get_one::<String>("ASM").expect("asm path required");
+            let path_to_asm = sub_matches
+                .get_one::<String>("ASM")
+                .expect("asm path required");
             let code = std::fs::read_to_string(path_to_asm).unwrap_or_else(|err| {
                 cli::error(format!("Unable to read assembly source code [{}]", err));
                 std::process::exit(1);
@@ -89,7 +91,7 @@ fn main() {
             });
 
             let mut analyzer = assembly::semantic::Analyzer::new("TEST", &code);
-            let _ = analyzer.analyze(&ast).unwrap_or_else(|errors| {
+            analyzer.analyze(&ast).unwrap_or_else(|errors| {
                 for err in errors {
                     let mut buffer = String::new();
                     let _ = reporter.render_report(&mut buffer, err);
@@ -108,17 +110,29 @@ fn main() {
             let new_file = path_to_asm.replace(".asm", ".mvm");
 
             std::fs::write(&new_file, code).unwrap_or_else(|err| {
-                cli::error(format!("Unable to write generated code to binary file [{}]", err));
+                cli::error(format!(
+                    "Unable to write generated code to binary file [{}]",
+                    err
+                ));
             });
 
-            cli::info("Successfully", format!("compiled assembly to mvm binary: {}", new_file));
-        },
+            cli::info(
+                "Successfully",
+                format!("compiled assembly to mvm binary: {}", new_file),
+            );
+        }
 
         Some(("run", sub_matches)) => {
-            let memsize = sub_matches.get_one::<String>("MEMSIZE").expect("no memsize found");
-            let stacksize = sub_matches.get_one::<String>("STACKSIZE").expect("no stacksize found");
+            let memsize = sub_matches
+                .get_one::<String>("MEMSIZE")
+                .expect("no memsize found");
+            let stacksize = sub_matches
+                .get_one::<String>("STACKSIZE")
+                .expect("no stacksize found");
 
-            let program_path = sub_matches.get_one::<String>("PROGRAM").expect("no program path found");
+            let program_path = sub_matches
+                .get_one::<String>("PROGRAM")
+                .expect("no program path found");
             let program = std::fs::read(program_path).expect("unable to read program");
 
             let memsize = memsize.parse::<usize>().expect("unable to parse memsize");
@@ -133,12 +147,12 @@ fn main() {
                 cli::error(format!("Unable to load the program [{}]", err));
             });
 
-            let _ = vm.run().unwrap_or_else(|err| {
+            vm.run().unwrap_or_else(|err| {
                 cli::vm_error(err);
                 std::process::exit(1);
             });
         }
 
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }
