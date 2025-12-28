@@ -1,3 +1,5 @@
+use std::io::Read;
+
 use super::*;
 
 impl VM {
@@ -31,13 +33,38 @@ impl VM {
                 self.running = false;
             }
 
+            // read
+            1 => {
+                let buf_addr = self.get_register(R0)? as usize;
+                let buf_len = self.get_register(R1)? as usize;
+                let buf = self.memory.get_mut_ptr(buf_addr);
+
+                if buf_len != 0 {
+                    let mut slice = unsafe { std::slice::from_raw_parts_mut(buf, buf_len) };
+                    let mut stdin = std::io::stdin().lock();
+
+                    let bytes_read = stdin.read(&mut slice).map_err(|err| MvmError::IOError(err))?;
+
+                    if bytes_read < buf_len {
+                        unsafe {
+                            std::ptr::write_volatile(slice.get_unchecked_mut(bytes_read), 0);
+                        }
+                    } else {
+                        unsafe {
+                            std::ptr::write_volatile(slice.get_unchecked_mut(buf_len - 1), 0);
+                        }
+                    }
+                }
+            }
+
+            // write
+            
             2 => {
                 let fd = self.get_register(R0)? as libc::c_int;
                 let len = self.get_register(R2)? as usize;
 
                 let in_mem_buffer = self.get_register(R1)? as usize;
-                let buffer =
-                    unsafe { self.memory.inner.as_ptr().add(in_mem_buffer) as *const libc::c_void };
+                let buffer = self.memory.get_const_ptr(in_mem_buffer) as *const libc::c_void;
 
                 self.set_register(R_ACCUMULATOR, unsafe { libc::write(fd, buffer, len) }
                     as u64)?;
