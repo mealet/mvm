@@ -226,8 +226,9 @@ impl<'tokens> Parser<'tokens> {
 
                         // 2 argument instructions
                         "mov" | "frame8" | "frame16" | "frame32" | "frame64" | "peek8"
-                        | "peek16" | "peek32" | "peek64" | "add" | "xadd" | "sub" | "mul"
-                        | "div" | "cmp" | "je" | "jne" => {
+                        | "load8" | "load16" | "load32" | "load64" | "store8" | "store16"
+                        | "store32" | "store64" | "peek16" | "peek32" | "peek64" | "add"
+                        | "xadd" | "sub" | "mul" | "div" | "cmp" | "je" | "jne" => {
                             args.push(self.expression());
 
                             if let Err(err) = self.skip_expected(TokenType::Comma) {

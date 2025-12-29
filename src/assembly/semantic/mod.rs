@@ -257,6 +257,23 @@ impl Analyzer {
                         });
                     }
 
+                    "load8" | "load16" | "load32" | "load64" |
+                    "store8" | "store16" | "store32" | "store64" => {
+                        macros::assert_arg!(
+                            self,
+                            "register",
+                            args.first().unwrap(),
+                            Expression::AsmReg(_, _)
+                        );
+
+                        macros::assert_arg!(
+                            self,
+                            "register",
+                            args.get(1).unwrap(),
+                            Expression::AsmReg(_, _)
+                        );
+                    }
+
                     "push8" | "push16" | "push32" | "push64" => macros::assert_arg!(
                         self,
                         "register",

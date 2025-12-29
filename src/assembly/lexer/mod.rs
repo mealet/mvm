@@ -74,27 +74,43 @@ impl Lexer {
                 macros::std_instruction!("call"),
                 macros::std_instruction!("int"),
                 macros::std_instruction!("mov"),
+
+                macros::std_instruction!("load8"),
+                macros::std_instruction!("load16"),
+                macros::std_instruction!("load32"),
+                macros::std_instruction!("load64"),
+
+                macros::std_instruction!("store8"),
+                macros::std_instruction!("store16"),
+                macros::std_instruction!("store32"),
+                macros::std_instruction!("store64"),
+
                 macros::std_instruction!("push8"),
                 macros::std_instruction!("push16"),
                 macros::std_instruction!("push32"),
                 macros::std_instruction!("push64"),
+
                 macros::std_instruction!("pop8"),
                 macros::std_instruction!("pop16"),
                 macros::std_instruction!("pop32"),
                 macros::std_instruction!("pop64"),
+
                 macros::std_instruction!("frame8"),
                 macros::std_instruction!("frame16"),
                 macros::std_instruction!("frame32"),
                 macros::std_instruction!("frame64"),
+
                 macros::std_instruction!("peek8"),
                 macros::std_instruction!("peek16"),
                 macros::std_instruction!("peek32"),
                 macros::std_instruction!("peek64"),
+
                 macros::std_instruction!("add"),
                 macros::std_instruction!("sub"),
                 macros::std_instruction!("mul"),
                 macros::std_instruction!("div"),
                 macros::std_instruction!("cmp"),
+
                 macros::std_instruction!("jmp"),
                 macros::std_instruction!("jz"),
                 macros::std_instruction!("jnz"),

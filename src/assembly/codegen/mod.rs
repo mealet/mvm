@@ -591,6 +591,54 @@ impl Codegen {
                         self.compile_expr(args.get(1).unwrap());
                     }
 
+                    "load8" => {
+                        self.push_byte(Opcode::Load8 as u8);
+                        self.compile_expr(args.first().unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    }
+
+                    "load16" => {
+                        self.push_byte(Opcode::Load16 as u8);
+                        self.compile_expr(args.first().unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    }
+
+                    "load32" => {
+                        self.push_byte(Opcode::Load32 as u8);
+                        self.compile_expr(args.first().unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    }
+
+                    "load64" => {
+                        self.push_byte(Opcode::Load64 as u8);
+                        self.compile_expr(args.first().unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    }
+
+                    "store8" => {
+                        self.push_byte(Opcode::Store8 as u8);
+                        self.compile_expr(args.first().unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    }
+
+                    "store16" => {
+                        self.push_byte(Opcode::Store16 as u8);
+                        self.compile_expr(args.first().unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    }
+
+                    "store32" => {
+                        self.push_byte(Opcode::Store32 as u8);
+                        self.compile_expr(args.first().unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    }
+
+                    "store64" => {
+                        self.push_byte(Opcode::Store64 as u8);
+                        self.compile_expr(args.first().unwrap());
+                        self.compile_expr(args.get(1).unwrap());
+                    }
+
                     "jmp" => {
                         self.push_byte(Opcode::Jmp as u8);
                         self.compile_expr(args.first().unwrap());
