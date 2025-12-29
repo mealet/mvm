@@ -31,8 +31,10 @@ impl MvmAllocator {
         }
     }
 
-    pub fn allocate() -> *mut u8 {
-        todo!()
+    pub fn allocate(&mut self, size: usize) -> *mut u8 {
+        let block = unsafe { (*self.arena).allocate_block(size) };
+
+        AllocatorBlock::get_data_ptr(block)
     }
 }
 
