@@ -58,7 +58,6 @@ impl VM {
             }
 
             // write
-            
             2 => {
                 let fd = self.get_register(R0)? as libc::c_int;
                 let len = self.get_register(R2)? as usize;
@@ -69,6 +68,12 @@ impl VM {
                 self.set_register(R_ACCUMULATOR, unsafe { libc::write(fd, buffer, len) }
                     as u64)?;
             }
+
+            // alloc
+            3 => todo!(),
+
+            // free
+            4 => todo!(),
 
             unknown => {
                 return Err(MvmError::UnknownSystemCall(unknown));

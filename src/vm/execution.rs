@@ -94,37 +94,85 @@ impl VM {
                 self.set_register(destination as u64, value)?;
             }
 
-            Opcode::MovR2M8 => {
-                let address = self.fetch_u64()?;
-                let src = self.fetch_u8()?;
+            Opcode::Load8 => {
+                let dest = self.fetch_u8()?;
+                let addr_reg = self.fetch_u8()?;
 
-                let value = self.get_register(src as u64)?;
-                self.memory.set_u8(address, value as u8)?;
-            }
+                let addr = self.get_register(addr_reg as u64)?;
+                let value = self.memory.get_u8(addr)?;
 
-            Opcode::MovR2M16 => {
-                let address = self.fetch_u64()?;
-                let src = self.fetch_u8()?;
+                self.set_register(dest as u64, value as u64)?;
+            },
 
-                let value = self.get_register(src as u64)?;
-                self.memory.set_u16(address, value as u16)?;
-            }
+            Opcode::Load16 => {
+                let dest = self.fetch_u8()?;
+                let addr_reg = self.fetch_u8()?;
 
-            Opcode::MovR2M32 => {
-                let address = self.fetch_u64()?;
-                let src = self.fetch_u8()?;
+                let addr = self.get_register(addr_reg as u64)?;
+                let value = self.memory.get_u16(addr)?;
 
-                let value = self.get_register(src as u64)?;
-                self.memory.set_u32(address, value as u32)?;
-            }
+                self.set_register(dest as u64, value as u64)?;
+            },
 
-            Opcode::MovR2M64 => {
-                let address = self.fetch_u64()?;
-                let src = self.fetch_u8()?;
+            Opcode::Load32 => {
+                let dest = self.fetch_u8()?;
+                let addr_reg = self.fetch_u8()?;
 
-                let value = self.get_register(src as u64)?;
-                self.memory.set_u64(address, value)?;
-            }
+                let addr = self.get_register(addr_reg as u64)?;
+                let value = self.memory.get_u32(addr)?;
+
+                self.set_register(dest as u64, value as u64)?;
+            },
+
+            Opcode::Load64 => {
+                let dest = self.fetch_u8()?;
+                let addr_reg = self.fetch_u8()?;
+
+                let addr = self.get_register(addr_reg as u64)?;
+                let value = self.memory.get_u64(addr)?;
+
+                self.set_register(dest as u64, value)?;
+            },
+
+            Opcode::Store8 => {
+                let addr_reg = self.fetch_u8()?;
+                let src_reg = self.fetch_u8()?;
+
+                let addr = self.get_register(addr_reg as u64)?;
+                let value = self.get_register(src_reg as u64)?;
+
+                self.memory.set_u8(addr, value as u8)?;
+            },
+
+            Opcode::Store16 => {
+                let addr_reg = self.fetch_u8()?;
+                let src_reg = self.fetch_u8()?;
+
+                let addr = self.get_register(addr_reg as u64)?;
+                let value = self.get_register(src_reg as u64)?;
+
+                self.memory.set_u16(addr, value as u16)?;
+            },
+
+            Opcode::Store32 => {
+                let addr_reg = self.fetch_u8()?;
+                let src_reg = self.fetch_u8()?;
+
+                let addr = self.get_register(addr_reg as u64)?;
+                let value = self.get_register(src_reg as u64)?;
+
+                self.memory.set_u32(addr, value as u32)?;
+            },
+
+            Opcode::Store64 => {
+                let addr_reg = self.fetch_u8()?;
+                let src_reg = self.fetch_u8()?;
+
+                let addr = self.get_register(addr_reg as u64)?;
+                let value = self.get_register(src_reg as u64)?;
+
+                self.memory.set_u64(addr, value as u64)?;
+            },
 
             Opcode::Push8 => {
                 let src = self.fetch_u8()?;
@@ -827,10 +875,11 @@ mod tests {
     }
 
     #[test]
-    fn instruction_mov_r2m8_test() -> Result<(), MvmError> {
+    fn instruction_load8_test() -> Result<(), MvmError> {
         let mut vm = VM::new(64, 16)?;
 
-        vm.set_register(R0, 123)?;
+        vm.set_register(R0, 30)?;
+        vm.memory.set_u8(30, 123)?;
 
         let program = [
             Opcode::DataSection as u8,
@@ -839,16 +888,9 @@ mod tests {
             0xff,
             Opcode::TextSection as u8,
             // -- program --
-            // mov 30 %r0
-            Opcode::MovR2M8 as u8,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            30,
+            // load8 %r1, %r0
+            Opcode::Load8 as u8,
+            R1 as u8,
             R0 as u8,
             // -- program end --
             Opcode::Halt as u8,
@@ -857,16 +899,143 @@ mod tests {
         vm.insert_program(&program)?;
         vm.run()?;
 
+        assert_eq!(vm.get_register(R0)?, 30);
+        assert_eq!(vm.get_register(R1)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_load16_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 30)?;
+        vm.memory.set_u16(30, 123)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // load16 %r1, %r0
+            Opcode::Load16 as u8,
+            R1 as u8,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8,
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 30);
+        assert_eq!(vm.get_register(R1)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_load32_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 30)?;
+        vm.memory.set_u32(30, 123)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // load32 %r1, %r0
+            Opcode::Load32 as u8,
+            R1 as u8,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8,
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 30);
+        assert_eq!(vm.get_register(R1)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_load64_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 30)?;
+        vm.memory.set_u64(30, 123)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // load64 %r1, %r0
+            Opcode::Load64 as u8,
+            R1 as u8,
+            R0 as u8,
+            // -- program end --
+            Opcode::Halt as u8,
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 30);
+        assert_eq!(vm.get_register(R1)?, 123);
+
+        Ok(())
+    }
+
+    #[test]
+    fn instruction_store8_test() -> Result<(), MvmError> {
+        let mut vm = VM::new(64, 16)?;
+
+        vm.set_register(R0, 30)?;
+        vm.set_register(R1, 123)?;
+
+        let program = [
+            Opcode::DataSection as u8,
+            // -- data section --
+            // -- data section end --
+            0xff,
+            Opcode::TextSection as u8,
+            // -- program --
+            // store8 %r0, %r1
+            Opcode::Store8 as u8,
+            R0 as u8,
+            R1 as u8,
+            // -- program end --
+            Opcode::Halt as u8,
+        ];
+
+        vm.insert_program(&program)?;
+        vm.run()?;
+
+        assert_eq!(vm.get_register(R0)?, 30);
+        assert_eq!(vm.get_register(R1)?, 123);
         assert_eq!(vm.memory.get_u8(30)?, 123);
 
         Ok(())
     }
 
     #[test]
-    fn instruction_mov_r2m16_test() -> Result<(), MvmError> {
+    fn instruction_store16_test() -> Result<(), MvmError> {
         let mut vm = VM::new(64, 16)?;
 
-        vm.set_register(R0, 123)?;
+        vm.set_register(R0, 30)?;
+        vm.set_register(R1, 123)?;
 
         let program = [
             Opcode::DataSection as u8,
@@ -875,17 +1044,10 @@ mod tests {
             0xff,
             Opcode::TextSection as u8,
             // -- program --
-            // mov 30 %r0
-            Opcode::MovR2M16 as u8,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            30,
+            // store16 %r0, %r1
+            Opcode::Store16 as u8,
             R0 as u8,
+            R1 as u8,
             // -- program end --
             Opcode::Halt as u8,
         ];
@@ -893,16 +1055,19 @@ mod tests {
         vm.insert_program(&program)?;
         vm.run()?;
 
+        assert_eq!(vm.get_register(R0)?, 30);
+        assert_eq!(vm.get_register(R1)?, 123);
         assert_eq!(vm.memory.get_u16(30)?, 123);
 
         Ok(())
     }
 
     #[test]
-    fn instruction_mov_r2m32_test() -> Result<(), MvmError> {
+    fn instruction_store32_test() -> Result<(), MvmError> {
         let mut vm = VM::new(64, 16)?;
 
-        vm.set_register(R0, 123)?;
+        vm.set_register(R0, 30)?;
+        vm.set_register(R1, 123)?;
 
         let program = [
             Opcode::DataSection as u8,
@@ -911,17 +1076,10 @@ mod tests {
             0xff,
             Opcode::TextSection as u8,
             // -- program --
-            // mov 30 %r0
-            Opcode::MovR2M32 as u8,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            30,
+            // store32 %r0, %r1
+            Opcode::Store32 as u8,
             R0 as u8,
+            R1 as u8,
             // -- program end --
             Opcode::Halt as u8,
         ];
@@ -929,16 +1087,19 @@ mod tests {
         vm.insert_program(&program)?;
         vm.run()?;
 
+        assert_eq!(vm.get_register(R0)?, 30);
+        assert_eq!(vm.get_register(R1)?, 123);
         assert_eq!(vm.memory.get_u32(30)?, 123);
 
         Ok(())
     }
 
     #[test]
-    fn instruction_mov_r2m64_test() -> Result<(), MvmError> {
+    fn instruction_store64_test() -> Result<(), MvmError> {
         let mut vm = VM::new(64, 16)?;
 
-        vm.set_register(R0, 123)?;
+        vm.set_register(R0, 30)?;
+        vm.set_register(R1, 123)?;
 
         let program = [
             Opcode::DataSection as u8,
@@ -947,17 +1108,10 @@ mod tests {
             0xff,
             Opcode::TextSection as u8,
             // -- program --
-            // mov 30 %r0
-            Opcode::MovR2M64 as u8,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            30,
+            // store64 %r0, %r1
+            Opcode::Store64 as u8,
             R0 as u8,
+            R1 as u8,
             // -- program end --
             Opcode::Halt as u8,
         ];
@@ -965,6 +1119,8 @@ mod tests {
         vm.insert_program(&program)?;
         vm.run()?;
 
+        assert_eq!(vm.get_register(R0)?, 30);
+        assert_eq!(vm.get_register(R1)?, 123);
         assert_eq!(vm.memory.get_u64(30)?, 123);
 
         Ok(())

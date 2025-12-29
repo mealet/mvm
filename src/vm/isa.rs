@@ -19,10 +19,16 @@ pub enum Opcode {
     Mov32 = 0x05,    // mov %dest, $u32
     Mov64 = 0x06,    // mov %dest, $u64
     MovR2R = 0x07,   // mov %dest, %src
-    MovR2M8 = 0xef,  // mov address, %src
-    MovR2M16 = 0x28, // mov address, %src
-    MovR2M32 = 0x29, // mov address, %src
-    MovR2M64 = 0x40, // mov address, %src
+
+    Load8 = 0x2a,   // load8 %dest, %addr_register
+    Load16 = 0x2b,  // load16 %dest, %addr_register
+    Load32 = 0x2c,  // load32 %dest, %addr_register
+    Load64 = 0x2d,  // load64 %dest, %addr_register
+
+    Store8 = 0xef,  // store8 %addr_register, %src
+    Store16 = 0x28, // store16 %addr_register, %src
+    Store32 = 0x29, // store32 %addr_register, %src
+    Store64 = 0x40, // store64 %addr_register, %src
 
     // push instruction appends value from register to stack and places
     // offset (related to frame pointer) to %src.
@@ -113,10 +119,16 @@ impl TryFrom<u8> for Opcode {
             0x05 => Ok(Opcode::Mov32),
             0x06 => Ok(Opcode::Mov64),
             0x07 => Ok(Opcode::MovR2R),
-            0xef => Ok(Opcode::MovR2M8),
-            0x28 => Ok(Opcode::MovR2M16),
-            0x29 => Ok(Opcode::MovR2M32),
-            0x40 => Ok(Opcode::MovR2M64),
+
+            0x2a => Ok(Opcode::Load8),
+            0x2b => Ok(Opcode::Load16),
+            0x2c => Ok(Opcode::Load32),
+            0x2d => Ok(Opcode::Load64),
+
+            0xef => Ok(Opcode::Store8),
+            0x28 => Ok(Opcode::Store16),
+            0x29 => Ok(Opcode::Store32),
+            0x40 => Ok(Opcode::Store64),
 
             0x30 => Ok(Opcode::Push8),
             0x31 => Ok(Opcode::Push16),
