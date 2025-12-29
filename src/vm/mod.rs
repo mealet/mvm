@@ -5,6 +5,7 @@ use memory::MemoryBuffer;
 mod error;
 mod execution;
 mod interrupts;
+mod allocator;
 mod isa;
 mod memory;
 
