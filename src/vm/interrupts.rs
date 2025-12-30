@@ -65,7 +65,7 @@ impl VM {
                 let in_mem_buffer = self.get_register(R1)? as usize;
                 let buffer = self.memory.get_const_ptr(in_mem_buffer) as *const libc::c_void;
 
-                self.set_register(R_ACCUMULATOR, unsafe { libc::write(fd, buffer, len) }
+                self.set_register(R_ACCUMULATOR, unsafe { libc::write(fd, buffer, len.try_into().unwrap_or_default()) }
                     as u64)?;
             }
 
