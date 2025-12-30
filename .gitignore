@@ -1,3 +1,4 @@
 /target
-test.mvm
+examples/*.mvm
+*.mvm
 test.asm
