@@ -14,6 +14,11 @@ section .data
     ascii "not equals!\n"
   ne_len:
     [. - ne_str]
+
+  eq_str:
+    ascii "equals!\n"
+  eq_len:
+    [. - eq_str]
 section .text
 entry _start
 
@@ -55,32 +60,46 @@ cmp_loop:
   mov %accumulator, $0
 
   cmp %r3, %accumulator
-  jz exit
+  jz print_eq
 
   cmp %r3, %accumulator
-  jz exit
+  jz print_eq
 
   ; returning to loop
 
   jmp cmp_loop
+
+print_eq:
+  mov %r0, eq_str
+  mov %r1, eq_len
+
+  call print
+  call exit
+
+print_ne:
+  mov %r0, ne_str
+  mov %r1, ne_len
+
+  call print
+  call exit
+
+print:
+  ; -- syscall void write(int output, void *buffer, size_t length) --
+
+  mov %r2, %r1 ; size_t length (length variable)
+
+  mov %r1, %r0 ; void* buffer (ptr to message)
+  add %r1, $8 ; string address offset
+
+  mov %r0, $1 ; int output (stdout)
+
+  mov %call, $2 ; `write` syscall
+  int $syscall ; system call interrupt
+
+  ret
 
 exit:
   ; -- syscall void exit(int status) --
   mov %r0, $0 ; int status
   mov %call, $0 ; `exit` syscall
   int $syscall ; system call interrupt
-
-print_ne:
-  ; -- syscall void write(int output, void *buffer, size_t length) --
-
-  mov %r0, $1 ; int output (stdout)
-
-  mov %r1, ne_str; void* buffer (ptr to message)
-  add %r1, $8 ; string address offset
-
-  mov %r2, ne_len ; size_t length (length variable)
-
-  mov %call, $2 ; `write` syscall
-  int $syscall ; system call interrupt
-
-  jmp exit
