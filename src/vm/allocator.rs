@@ -81,6 +81,9 @@ impl AllocatorArena {
                 }
 
                 let block = AllocatorBlock::new(block_ptr, size, false);
+
+                (*ptr).next = block;
+
                 return block;
             }
         }
