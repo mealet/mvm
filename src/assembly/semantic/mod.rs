@@ -201,6 +201,9 @@ impl Analyzer {
                         args.first().unwrap(),
                         Expression::LabelRef(_, _)
                     ),
+
+                    "ret" => {},
+
                     "int" => {
                         let arg = args.first().unwrap();
 
