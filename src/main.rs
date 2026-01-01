@@ -210,6 +210,8 @@ fn main() {
                 cli::vm_error(err);
                 std::process::exit(1);
             });
+
+            std::process::exit(vm.exit_code as i32);
         }
 
         _ => unreachable!(),
