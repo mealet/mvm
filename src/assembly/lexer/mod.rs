@@ -67,7 +67,19 @@ impl Lexer {
                 macros::std_reg!("frame_ptr"),
                 macros::std_reg!("mem_ptr"),
             ]),
-            std_constants: HashMap::from([macros::std_constant!("syscall")]),
+            std_constants: HashMap::from([
+                // interrupts
+                macros::std_constant!("syscall"), // kept for old examples
+                macros::std_constant!("int_syscall"),
+                macros::std_constant!("int_accinc"),
+
+                // syscalls
+                macros::std_constant!("sys_exit"),
+                macros::std_constant!("sys_read"),
+                macros::std_constant!("sys_write"),
+                macros::std_constant!("sys_alloc"),
+                macros::std_constant!("sys_free"),
+            ]),
             std_instructions: HashMap::from([
                 macros::std_instruction!("halt"),
                 macros::std_instruction!("ret"),

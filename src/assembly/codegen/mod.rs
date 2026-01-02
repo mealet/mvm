@@ -739,7 +739,18 @@ impl Codegen {
 
             Expression::AsmConstant(name, _) => {
                 let const_value = match name.as_str() {
+                    // interrupts
                     "syscall" => 80,
+                    "int_syscall" => 80,
+                    "int_accinc" => 0,
+
+                    // syscalls
+                    "sys_exit" => 0,
+                    "sys_read" => 1,
+                    "sys_write" => 2,
+                    "sys_alloc" => 3,
+                    "sys_free" => 4,
+
                     _ => unreachable!(),
                 };
 
