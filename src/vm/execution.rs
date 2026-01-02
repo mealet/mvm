@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use super::{
     MvmError, Opcode, R_ACCUMULATOR, R_FRAME_POINTER, R_INSTRUCTION_POINTER, R_STACK_POINTER, VM,
 };
@@ -37,6 +39,13 @@ impl VM {
                 } else {
                     return Err(MvmError::UnknownInterrupt);
                 }
+            }
+            Opcode::Debug => {
+                let reg = self.fetch_u8()? as u64;
+                let value = self.get_register(reg)?;
+                let reg_name = super::register_to_str(reg);
+
+                eprintln!("{} %{reg_name} = {value}", "[DEBUG]".truecolor(128, 128, 128));
             }
 
             Opcode::DataSection => {

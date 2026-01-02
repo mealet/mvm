@@ -17,7 +17,7 @@ pub fn cli() -> Command {
         )
         .subcommand(
             Command::new("compile")
-                .arg(arg!(-d --debug "debug build of program"))
+                .arg(arg!(-r --release "build release version of program"))
                 .arg(arg!(<ASM> "assembly file path"))
                 .arg_required_else_help(true),
         )

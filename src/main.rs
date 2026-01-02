@@ -103,7 +103,10 @@ fn main() {
                 std::process::exit(1);
             });
 
-            let mut codegen = assembly::codegen::Codegen::new();
+            // release mode flag
+            let release_mode = sub_matches.get_flag("release");
+
+            let mut codegen = assembly::codegen::Codegen::new(release_mode);
             let code = codegen.compile(&ast);
 
             cli::info("Writing", "generated code to binary");
@@ -119,7 +122,7 @@ fn main() {
 
             cli::info(
                 "Successfully",
-                format!("compiled assembly to mvm binary: {}", new_file),
+                format!("compiled assembly to mvm binary: {} ({} mode)", new_file, if release_mode { "release" } else { "debug" }),
             );
         }
 

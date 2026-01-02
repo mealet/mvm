@@ -8,6 +8,7 @@ pub enum Opcode {
     Return = 0xf1,    // ret
     Call = 0x27,      // call label
     Interrupt = 0xf2, // int $u8
+    Debug = 0x41,     // dbg %reg
 
     // ---| Sections |---
     DataSection = 0x01, // section .data
@@ -110,6 +111,7 @@ impl TryFrom<u8> for Opcode {
             0xf1 => Ok(Opcode::Return),
             0x27 => Ok(Opcode::Call),
             0xf2 => Ok(Opcode::Interrupt),
+            0x41 => Ok(Opcode::Debug),
 
             0x01 => Ok(Opcode::DataSection),
             0x02 => Ok(Opcode::TextSection),

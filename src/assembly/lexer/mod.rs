@@ -85,6 +85,7 @@ impl Lexer {
                 macros::std_instruction!("ret"),
                 macros::std_instruction!("call"),
                 macros::std_instruction!("int"),
+                macros::std_instruction!("dbg"),
                 macros::std_instruction!("mov"),
                 macros::std_instruction!("load8"),
                 macros::std_instruction!("load16"),

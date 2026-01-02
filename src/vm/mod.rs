@@ -28,6 +28,28 @@ pub const R_STACK_POINTER: u64 = 12;
 pub const R_FRAME_POINTER: u64 = 13;
 pub const R_MEMORY_POINTER: u64 = 14;
 // -----------------
+pub fn register_to_str(index: u64) -> &'static str {
+    match index {
+        R0 => "r0",
+        R1 => "r1",
+        R2 => "r2",
+        R3 => "r3",
+        R4 => "r4",
+        R5 => "r5",
+        R6 => "r6",
+        R7 => "r7",
+        R8 => "r8",
+        R_SYSTEM_CALL => "call",
+        R_ACCUMULATOR => "accumulator",
+        R_INSTRUCTION_POINTER => "instruction_ptr",
+        R_STACK_POINTER => "stack_ptr",
+        R_FRAME_POINTER => "frame_ptr",
+        R_MEMORY_POINTER => "mem_ptr",
+
+        _ => "undefined"
+    }
+}
+// -----------------
 
 type InterruptHandler = fn(&mut VM) -> Result<(), MvmError>;
 

@@ -8,6 +8,7 @@ use structs::{Constant, Label};
 
 pub struct Codegen {
     pc: u64,
+    release: bool,
 
     labels: HashMap<String, Label>,
     labels_refs: HashMap<u64, String>,
@@ -20,9 +21,10 @@ pub struct Codegen {
 }
 
 impl Codegen {
-    pub fn new() -> Self {
+    pub fn new(release_mode: bool) -> Self {
         Self {
             pc: 0,
+            release: release_mode,
 
             labels: HashMap::new(),
             labels_refs: HashMap::new(),
@@ -336,6 +338,13 @@ impl Codegen {
                     "int" => {
                         self.push_byte(Opcode::Interrupt as u8);
                         self.compile_expr(args.first().unwrap());
+                    }
+
+                    "dbg" => {
+                        if !self.release {
+                            self.push_byte(Opcode::Debug as u8);
+                            self.compile_expr(args.first().unwrap());
+                        }
                     }
 
                     "mov" => {
@@ -863,7 +872,7 @@ mod tests {
         let mut parser = Parser::new(FILENAME, CODE, &tokens);
         let ast = parser.parse().unwrap();
 
-        let mut codegen = Codegen::new();
+        let mut codegen = Codegen::new(false);
         codegen.compile_expr(&ast[0]);
 
         assert_eq!(codegen.labels.get("label_def"), Some(&Label::new(0, false)));
@@ -882,7 +891,7 @@ mod tests {
         let mut parser = Parser::new(FILENAME, CODE, &tokens);
         let ast = parser.parse().unwrap();
 
-        let mut codegen = Codegen::new();
+        let mut codegen = Codegen::new(false);
 
         codegen.compile_expr(&ast[0]);
         codegen.compile_expr(&ast[1]);
@@ -903,7 +912,7 @@ mod tests {
         let mut parser = Parser::new(FILENAME, CODE, &tokens);
         let ast = parser.parse().unwrap();
 
-        let mut codegen = Codegen::new();
+        let mut codegen = Codegen::new(false);
 
         codegen.compile_expr(&ast[0]);
 
@@ -923,7 +932,7 @@ mod tests {
         let mut parser = Parser::new(FILENAME, CODE, &tokens);
         let ast = parser.parse().unwrap();
 
-        let mut codegen = Codegen::new();
+        let mut codegen = Codegen::new(false);
 
         codegen.compile_expr(&ast[0]);
 
@@ -943,7 +952,7 @@ mod tests {
         let mut parser = Parser::new(FILENAME, CODE, &tokens);
         let ast = parser.parse().unwrap();
 
-        let mut codegen = Codegen::new();
+        let mut codegen = Codegen::new(false);
 
         codegen.compile_expr(&ast[0]);
 
@@ -961,7 +970,7 @@ mod tests {
         let mut parser = Parser::new(FILENAME, CODE, &tokens);
         let ast = parser.parse().unwrap();
 
-        let mut codegen = Codegen::new();
+        let mut codegen = Codegen::new(false);
 
         for ref expr in ast {
             codegen.compile_expr(expr);
@@ -985,7 +994,7 @@ mod tests {
         let mut parser = Parser::new(FILENAME, CODE, &tokens);
         let ast = parser.parse().unwrap();
 
-        let mut codegen = Codegen::new();
+        let mut codegen = Codegen::new(false);
 
         for ref expr in ast {
             codegen.compile_expr(expr);
@@ -1006,7 +1015,7 @@ mod tests {
         let mut parser = Parser::new(FILENAME, CODE, &tokens);
         let ast = parser.parse().unwrap();
 
-        let mut codegen = Codegen::new();
+        let mut codegen = Codegen::new(false);
 
         for ref expr in ast {
             codegen.compile_expr(expr);
@@ -1030,7 +1039,7 @@ mod tests {
         let mut parser = Parser::new(FILENAME, CODE, &tokens);
         let ast = parser.parse().unwrap();
 
-        let mut codegen = Codegen::new();
+        let mut codegen = Codegen::new(false);
 
         for ref expr in ast {
             codegen.compile_expr(expr);
@@ -1051,7 +1060,7 @@ mod tests {
         let mut parser = Parser::new(FILENAME, CODE, &tokens);
         let ast = parser.parse().unwrap();
 
-        let mut codegen = Codegen::new();
+        let mut codegen = Codegen::new(false);
 
         for ref expr in ast {
             codegen.compile_expr(expr);

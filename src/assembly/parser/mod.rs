@@ -208,7 +208,7 @@ impl<'tokens> Parser<'tokens> {
 
                         // 1 argument instructions
                         "call" | "int" | "push8" | "push16" | "push32" | "push64" | "pop8"
-                        | "pop16" | "pop32" | "pop64" | "jmp" | "jz" | "jnz" => {
+                        | "pop16" | "pop32" | "pop64" | "jmp" | "jz" | "jnz" | "dbg" => {
                             let last_arg = self.expression();
                             let last_arg_span = last_arg.get_span();
 
