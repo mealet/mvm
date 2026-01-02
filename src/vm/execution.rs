@@ -45,7 +45,10 @@ impl VM {
                 let value = self.get_register(reg)?;
                 let reg_name = super::register_to_str(reg);
 
-                eprintln!("{} %{reg_name} = {value}", "[DEBUG]".truecolor(128, 128, 128));
+                eprintln!(
+                    "{} %{reg_name} = {value}",
+                    "[DEBUG]".truecolor(128, 128, 128)
+                );
             }
 
             Opcode::DataSection => {

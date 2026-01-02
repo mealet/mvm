@@ -1,7 +1,7 @@
+use allocator::MvmAllocator;
 use error::MvmError;
 pub use isa::Opcode;
 use memory::MemoryBuffer;
-use allocator::MvmAllocator;
 
 mod allocator;
 mod error;
@@ -46,7 +46,7 @@ pub fn register_to_str(index: u64) -> &'static str {
         R_FRAME_POINTER => "frame_ptr",
         R_MEMORY_POINTER => "mem_ptr",
 
-        _ => "undefined"
+        _ => "undefined",
     }
 }
 // -----------------

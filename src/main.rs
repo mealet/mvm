@@ -122,7 +122,11 @@ fn main() {
 
             cli::info(
                 "Successfully",
-                format!("compiled assembly to mvm binary: {} ({} mode)", new_file, if release_mode { "release" } else { "debug" }),
+                format!(
+                    "compiled assembly to mvm binary: {} ({} mode)",
+                    new_file,
+                    if release_mode { "release" } else { "debug" }
+                ),
             );
         }
 

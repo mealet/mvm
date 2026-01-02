@@ -72,7 +72,6 @@ impl Lexer {
                 macros::std_constant!("syscall"), // kept for old examples
                 macros::std_constant!("int_syscall"),
                 macros::std_constant!("int_accinc"),
-
                 // syscalls
                 macros::std_constant!("sys_exit"),
                 macros::std_constant!("sys_read"),

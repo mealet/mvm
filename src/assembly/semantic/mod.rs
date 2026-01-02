@@ -220,7 +220,12 @@ impl Analyzer {
                     }
 
                     "dbg" => {
-                        macros::assert_arg!(self, "register", args.first().unwrap(), Expression::AsmReg(_, _));
+                        macros::assert_arg!(
+                            self,
+                            "register",
+                            args.first().unwrap(),
+                            Expression::AsmReg(_, _)
+                        );
                     }
 
                     "mov" => {

@@ -83,14 +83,14 @@ impl VM {
                 let allocated = self.allocator.allocate(size)?;
 
                 self.set_register(R_ACCUMULATOR, allocated as u64)?;
-            },
+            }
 
             // void free(void* ptr)
             4 => {
                 let ptr = self.get_register(R0)? as usize;
 
                 self.allocator.deallocate(ptr)?;
-            },
+            }
 
             unknown => {
                 return Err(MvmError::UnknownSystemCall(unknown));
