@@ -16,10 +16,14 @@ impl MemoryBuffer {
     }
 
     pub fn get_const_ptr(&self, address: usize) -> *const u8 {
+        if address >= self.len() { return std::ptr::null() };
+
         unsafe { self.inner.as_ptr().add(address) }
     }
 
     pub fn get_mut_ptr(&mut self, address: usize) -> *mut u8 {
+        if address >= self.len() { return std::ptr::null_mut() };
+
         unsafe {
             self.inner.as_mut_ptr().add(address)
         }
