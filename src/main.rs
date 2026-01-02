@@ -1,3 +1,6 @@
+//! MVM (Mealet's Virtual Machine) - simple and fast virtual machine written in Rust.
+//! Source code, licsense, examples and etc: https://github.com/mealet/mvm
+
 use colored::Colorize;
 
 mod assembly;
