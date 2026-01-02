@@ -41,6 +41,9 @@ pub enum MvmError {
     #[error("no program `text` section found")]
     NoTextSection,
 
-    #[error("io module returned error")]
+    #[error("allocator error [{0}]")]
+    AllocatorError(#[from] super::allocator::AllocatorError),
+
+    #[error("io error [{0}]")]
     IOError(#[from] std::io::Error),
 }

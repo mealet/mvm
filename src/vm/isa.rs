@@ -14,16 +14,16 @@ pub enum Opcode {
     TextSection = 0x02, // section .text
 
     // ---| Values Management |---
-    Mov8 = 0x03,     // mov %dest, $u8
-    Mov16 = 0x04,    // mov %dest, $u16
-    Mov32 = 0x05,    // mov %dest, $u32
-    Mov64 = 0x06,    // mov %dest, $u64
-    MovR2R = 0x07,   // mov %dest, %src
+    Mov8 = 0x03,   // mov %dest, $u8
+    Mov16 = 0x04,  // mov %dest, $u16
+    Mov32 = 0x05,  // mov %dest, $u32
+    Mov64 = 0x06,  // mov %dest, $u64
+    MovR2R = 0x07, // mov %dest, %src
 
-    Load8 = 0x2a,   // load8 %dest, %addr_register
-    Load16 = 0x2b,  // load16 %dest, %addr_register
-    Load32 = 0x2c,  // load32 %dest, %addr_register
-    Load64 = 0x2d,  // load64 %dest, %addr_register
+    Load8 = 0x2a,  // load8 %dest, %addr_register
+    Load16 = 0x2b, // load16 %dest, %addr_register
+    Load32 = 0x2c, // load32 %dest, %addr_register
+    Load64 = 0x2d, // load64 %dest, %addr_register
 
     Store8 = 0xef,  // store8 %addr_register, %src
     Store16 = 0x28, // store16 %addr_register, %src

@@ -87,7 +87,7 @@ impl MvmAllocator {
                             address: right_addr,
                             size: right_size,
                             free: true,
-                            restricted: right_restricted
+                            restricted: right_restricted,
                         },
                     ],
                 );
@@ -111,7 +111,7 @@ impl MvmAllocator {
                         address: current_addr,
                         size: merged_size,
                         free: true,
-                        restricted: next.restricted
+                        restricted: next.restricted,
                     };
 
                     self.allocated.splice(idx..(idx + 2), [merged_unit]);
@@ -132,7 +132,7 @@ impl MvmAllocator {
 
         let mut iterator = self.allocated.iter_mut();
 
-        while let Some(unit) = iterator.next() {
+        for unit in iterator {
             if unit.address == ptr {
                 if unit.restricted {
                     return Err(AllocatorError::RestrictedUnitAccess);
@@ -164,7 +164,7 @@ mod tests {
     fn allocator_base_test() {
         let mut allocator = MvmAllocator::new(MEM_START, MEM_END);
         let ptr = allocator.allocate(ALLOCA_LEN);
-        
+
         assert_eq!(ptr.unwrap(), 0);
         assert_eq!(allocator.allocated[0].size, ALLOCA_LEN);
         assert_eq!(allocator.allocated[0].address, 0);
@@ -219,7 +219,6 @@ mod tests {
         assert_eq!(allocator.allocated[0].free, false);
     }
 
-
     #[test]
     fn allocator_dealloc_test() {
         let mut allocator = MvmAllocator::new(MEM_START, MEM_END);
@@ -271,35 +270,26 @@ mod tests {
 
         let ptr = allocator.allocate(MEM_LEN + 1);
 
-        assert!(
-            matches!(
-                ptr,
-                Err(AllocatorError::OutOfMemory)
-            )
-        );
+        assert!(matches!(ptr, Err(AllocatorError::OutOfMemory)));
     }
 
     #[test]
     fn allocator_invalid_free_ptr_test() {
         let mut allocator = MvmAllocator::new(MEM_START, MEM_END);
 
-        assert!(
-            matches!(
-                allocator.deallocate(1),
-                Err(AllocatorError::InvalidFreePointer)
-            )
-        );
+        assert!(matches!(
+            allocator.deallocate(1),
+            Err(AllocatorError::InvalidFreePointer)
+        ));
     }
 
     #[test]
     fn allocator_restricted_access_test() {
         let mut allocator = MvmAllocator::new(MEM_START, MEM_END);
 
-        assert!(
-            matches!(
-                allocator.deallocate(0),
-                Err(AllocatorError::RestrictedUnitAccess)
-            )
-        );
+        assert!(matches!(
+            allocator.deallocate(0),
+            Err(AllocatorError::RestrictedUnitAccess)
+        ));
     }
 }

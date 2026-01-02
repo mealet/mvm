@@ -102,7 +102,7 @@ impl VM {
                 let value = self.memory.get_u8(addr)?;
 
                 self.set_register(dest as u64, value as u64)?;
-            },
+            }
 
             Opcode::Load16 => {
                 let dest = self.fetch_u8()?;
@@ -112,7 +112,7 @@ impl VM {
                 let value = self.memory.get_u16(addr)?;
 
                 self.set_register(dest as u64, value as u64)?;
-            },
+            }
 
             Opcode::Load32 => {
                 let dest = self.fetch_u8()?;
@@ -122,7 +122,7 @@ impl VM {
                 let value = self.memory.get_u32(addr)?;
 
                 self.set_register(dest as u64, value as u64)?;
-            },
+            }
 
             Opcode::Load64 => {
                 let dest = self.fetch_u8()?;
@@ -132,7 +132,7 @@ impl VM {
                 let value = self.memory.get_u64(addr)?;
 
                 self.set_register(dest as u64, value)?;
-            },
+            }
 
             Opcode::Store8 => {
                 let addr_reg = self.fetch_u8()?;
@@ -142,7 +142,7 @@ impl VM {
                 let value = self.get_register(src_reg as u64)?;
 
                 self.memory.set_u8(addr, value as u8)?;
-            },
+            }
 
             Opcode::Store16 => {
                 let addr_reg = self.fetch_u8()?;
@@ -152,7 +152,7 @@ impl VM {
                 let value = self.get_register(src_reg as u64)?;
 
                 self.memory.set_u16(addr, value as u16)?;
-            },
+            }
 
             Opcode::Store32 => {
                 let addr_reg = self.fetch_u8()?;
@@ -162,7 +162,7 @@ impl VM {
                 let value = self.get_register(src_reg as u64)?;
 
                 self.memory.set_u32(addr, value as u32)?;
-            },
+            }
 
             Opcode::Store64 => {
                 let addr_reg = self.fetch_u8()?;
@@ -171,8 +171,8 @@ impl VM {
                 let addr = self.get_register(addr_reg as u64)?;
                 let value = self.get_register(src_reg as u64)?;
 
-                self.memory.set_u64(addr, value as u64)?;
-            },
+                self.memory.set_u64(addr, value)?;
+            }
 
             Opcode::Push8 => {
                 let src = self.fetch_u8()?;

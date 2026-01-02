@@ -153,8 +153,9 @@ fn main() {
             let mut rptr = 1;
 
             while let Some(lhs) = program.get(lptr)
-            && let Some(rhs) = program.get(rptr)
-            && (*lhs != 0xFF || *rhs != vm::Opcode::DataSection as u8) {
+                && let Some(rhs) = program.get(rptr)
+                && (*lhs != 0xFF || *rhs != vm::Opcode::DataSection as u8)
+            {
                 metadata.push(*lhs);
 
                 lptr += 1;
@@ -163,7 +164,7 @@ fn main() {
 
             metadata.push(255);
 
-            if metadata.len() > 0 && memsize != 0 && stacksize != 0 {
+            if !metadata.is_empty() && memsize != 0 && stacksize != 0 {
                 if metadata.len() < METADATA_MINIMUM_LENGTH {
                     cli::error("Metadata's data is broken, please verify the file");
                     std::process::exit(1);
@@ -181,7 +182,7 @@ fn main() {
                 ]) as usize;
 
                 stacksize = u64::from_be_bytes([
-                    metadata[8 + 0],
+                    metadata[8],
                     metadata[8 + 1],
                     metadata[8 + 2],
                     metadata[8 + 3],
@@ -192,8 +193,16 @@ fn main() {
                 ]) as usize;
             }
 
-            memsize = if memsize == 0 { MEMSIZE_DEFAULT } else { memsize };
-            stacksize = if stacksize == 0 { STACKSIZE_DEFAULT } else { stacksize };
+            memsize = if memsize == 0 {
+                MEMSIZE_DEFAULT
+            } else {
+                memsize
+            };
+            stacksize = if stacksize == 0 {
+                STACKSIZE_DEFAULT
+            } else {
+                stacksize
+            };
 
             program = program[metadata.len()..].to_vec();
 

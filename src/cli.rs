@@ -11,14 +11,8 @@ pub fn cli() -> Command {
         .subcommand(
             Command::new("run")
                 .about("run virtual machine with compiled program")
-                .arg(
-                    arg!(-m <MEMSIZE> "machine memory size in bytes")
-                        .required(false),
-                )
-                .arg(
-                    arg!(-s <STACKSIZE> "stack size in bytes")
-                        .required(false),
-                )
+                .arg(arg!(-m <MEMSIZE> "machine memory size in bytes").required(false))
+                .arg(arg!(-s <STACKSIZE> "stack size in bytes").required(false))
                 .arg(arg!(<PROGRAM> "path to program binary file")),
         )
         .subcommand(

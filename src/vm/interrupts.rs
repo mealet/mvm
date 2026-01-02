@@ -40,10 +40,10 @@ impl VM {
                 let buf = self.memory.get_mut_ptr(buf_addr);
 
                 if buf_len != 0 {
-                    let mut slice = unsafe { std::slice::from_raw_parts_mut(buf, buf_len) };
+                    let slice = unsafe { std::slice::from_raw_parts_mut(buf, buf_len) };
                     let mut stdin = std::io::stdin().lock();
 
-                    let bytes_read = stdin.read(&mut slice).map_err(|err| MvmError::IOError(err))?;
+                    let bytes_read = stdin.read(slice).map_err(MvmError::IOError)?;
 
                     if bytes_read < buf_len {
                         unsafe {
@@ -65,8 +65,9 @@ impl VM {
                 let in_mem_buffer = self.get_register(R1)? as usize;
                 let buffer = self.memory.get_const_ptr(in_mem_buffer) as *const libc::c_void;
 
-                self.set_register(R_ACCUMULATOR, unsafe { libc::write(fd, buffer, len.try_into().unwrap_or_default()) }
-                    as u64)?;
+                self.set_register(R_ACCUMULATOR, unsafe {
+                    libc::write(fd, buffer, len as libc::size_t)
+                } as u64)?;
             }
 
             // alloc

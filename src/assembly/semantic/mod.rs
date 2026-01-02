@@ -202,7 +202,7 @@ impl Analyzer {
                         Expression::LabelRef(_, _)
                     ),
 
-                    "ret" => {},
+                    "ret" => {}
 
                     "int" => {
                         let arg = args.first().unwrap();
@@ -260,8 +260,8 @@ impl Analyzer {
                         });
                     }
 
-                    "load8" | "load16" | "load32" | "load64" |
-                    "store8" | "store16" | "store32" | "store64" => {
+                    "load8" | "load16" | "load32" | "load64" | "store8" | "store16" | "store32"
+                    | "store64" => {
                         macros::assert_arg!(
                             self,
                             "register",
