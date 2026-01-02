@@ -2,6 +2,7 @@ use error::MvmError;
 pub use isa::Opcode;
 use memory::MemoryBuffer;
 
+mod allocator;
 mod error;
 mod execution;
 mod interrupts;
