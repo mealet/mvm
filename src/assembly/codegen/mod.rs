@@ -215,6 +215,24 @@ impl Codegen {
         self.constants.insert(id, constant);
     }
 
+    fn get_asm_constant(id: impl AsRef<str>) -> u64 {
+        match id.as_ref() {
+            // interrupts
+            "syscall" => 80,
+            "int_syscall" => 80,
+            "int_accinc" => 0,
+
+            // syscalls
+            "sys_exit" => 0,
+            "sys_read" => 1,
+            "sys_write" => 2,
+            "sys_alloc" => 3,
+            "sys_free" => 4,
+
+            _ => unreachable!(),
+        }
+    }
+
     fn compile_expr(&mut self, expr: &Expression) {
         match expr {
             Expression::SectionDef { id, span: _ } => {
@@ -346,6 +364,21 @@ impl Codegen {
 
                                 Some(Expression::LabelRef(_, _)) => {
                                     self.push_byte(Opcode::Mov64 as u8);
+                                    self.compile_expr(args.first().unwrap());
+                                    self.compile_expr(args.get(1).unwrap());
+                                }
+
+                                Some(Expression::AsmConstant(id, _)) => {
+                                    let asm_const = Self::get_asm_constant(id);
+                                    let constant = Constant::new(asm_const);
+
+                                    match constant {
+                                        Constant::U8(_) => self.push_byte(Opcode::Mov8 as u8),
+                                        Constant::U16(_) => self.push_byte(Opcode::Mov16 as u8),
+                                        Constant::U32(_) => self.push_byte(Opcode::Mov32 as u8),
+                                        Constant::U64(_) => self.push_byte(Opcode::Mov64 as u8),
+                                    }
+
                                     self.compile_expr(args.first().unwrap());
                                     self.compile_expr(args.get(1).unwrap());
                                 }
@@ -738,22 +771,7 @@ impl Codegen {
             Expression::StringConstant(_, _) => unreachable!(),
 
             Expression::AsmConstant(name, _) => {
-                let const_value = match name.as_str() {
-                    // interrupts
-                    "syscall" => 80,
-                    "int_syscall" => 80,
-                    "int_accinc" => 0,
-
-                    // syscalls
-                    "sys_exit" => 0,
-                    "sys_read" => 1,
-                    "sys_write" => 2,
-                    "sys_alloc" => 3,
-                    "sys_free" => 4,
-
-                    _ => unreachable!(),
-                };
-
+                let const_value = Self::get_asm_constant(name);
                 self.compile_expr(&Expression::UIntConstant(const_value, (0, 0).into()));
             }
             Expression::AsmReg(name, _) => {

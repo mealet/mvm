@@ -232,6 +232,7 @@ impl Analyzer {
                                 Expression::UIntConstant(_, _)
                                     | Expression::AsmReg(_, _)
                                     | Expression::LabelRef(_, _)
+                                    | Expression::AsmConstant(_, _)
                             ) {
                                 self.error(AssemblyError::InvalidArgument {
                                     label: "this expected to be number/register/label".to_string(),
