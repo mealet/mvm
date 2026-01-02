@@ -1,3 +1,7 @@
+//! **Mvm Allocator** is a _blind type_ allocator. It means that allocator doesn't have access to
+//! memory, it only knows memory parameters and keeps allocated units manually to manage memory
+//! wihtout touching it.
+
 #![allow(unused)]
 
 use super::error::MvmError;
