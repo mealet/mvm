@@ -22,7 +22,7 @@ fn_free:
   ret
 
 
-; ===| Program Entry Point |===
+; ===| Program Entrypoint |===
 
 _start:
   ; alloc
