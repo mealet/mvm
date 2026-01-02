@@ -26,14 +26,21 @@ impl VM {
 
     // system call
     fn handle_int80(&mut self) -> Result<(), MvmError> {
+        // Function signature example:
+        //
+        // void function_name(type arg1, type arg2, ...)
+        //  ↑                  ↑          ↑
+        //  |                  |==========|============|> arguments (registers sequentially: r0, r1, ...)
+        //  |------------------------------------------|> return value type (must be store in accumulator)
+
         match self.get_register(R_SYSTEM_CALL)? {
-            // exit
+            // void exit(u64 code)
             0 => {
                 self.exit_code = self.get_register(R0)? as u8;
                 self.running = false;
             }
 
-            // read
+            // void read(void* buffer, u64 len)
             1 => {
                 let buf_addr = self.get_register(R0)? as usize;
                 let buf_len = self.get_register(R1)? as usize;
@@ -57,7 +64,7 @@ impl VM {
                 }
             }
 
-            // write
+            // u64 write(i32 output, void* buffer, u64 len)
             2 => {
                 let fd = self.get_register(R0)? as libc::c_int;
                 let len = self.get_register(R2)? as usize;
@@ -70,11 +77,20 @@ impl VM {
                 } as u64)?;
             }
 
-            // alloc
-            3 => todo!(),
+            // void* alloc(u64 size)
+            3 => {
+                let size = self.get_register(R0)? as usize;
+                let allocated = self.allocator.allocate(size)?;
 
-            // free
-            4 => todo!(),
+                self.set_register(R_ACCUMULATOR, allocated as u64)?;
+            },
+
+            // void free(void* ptr)
+            4 => {
+                let ptr = self.get_register(R0)? as usize;
+
+                self.allocator.deallocate(ptr)?;
+            },
 
             unknown => {
                 return Err(MvmError::UnknownSystemCall(unknown));

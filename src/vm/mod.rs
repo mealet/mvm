@@ -1,6 +1,7 @@
 use error::MvmError;
 pub use isa::Opcode;
 use memory::MemoryBuffer;
+use allocator::MvmAllocator;
 
 mod allocator;
 mod error;
@@ -44,6 +45,7 @@ pub struct VM {
     pub registers: MemoryBuffer,
 
     pub interrupt_handlers: [Option<InterruptHandler>; 256],
+    pub allocator: MvmAllocator,
 
     pub running: bool,
     pub text_section: bool,
@@ -61,6 +63,7 @@ impl VM {
             memory,
             registers: MemoryBuffer::new(15 * 8),
             interrupt_handlers: [None; 256],
+            allocator: MvmAllocator::new(0, 0), // zero init, in future will be re-initialized
             running: false,
             text_section: false,
             exit_code: 1,
@@ -111,6 +114,10 @@ impl VM {
 
         self.set_register(R_MEMORY_POINTER, memptr as u64)?;
         self.set_register(R_INSTRUCTION_POINTER, 0)?;
+
+        let frame_start = self.get_register(R_FRAME_POINTER)? as usize;
+
+        self.allocator = MvmAllocator::new(memptr, frame_start - 1);
 
         Ok(())
     }
