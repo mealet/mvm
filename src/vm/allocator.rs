@@ -20,11 +20,11 @@ pub enum AllocatorError {
     #[error("allocator is out of memory units")]
     OutOfMemory,
 
-    #[error("invalid pointer is being freed")]
-    InvalidFreePointer,
+    #[error("invalid pointer is being freed: `{0}`")]
+    InvalidFreePointer(usize),
 
-    #[error("restricted unit access is not allowed")]
-    RestrictedUnitAccess,
+    #[error("restricted unit access is not allowed: `{0}`")]
+    RestrictedUnitAccess(usize),
 }
 
 #[derive(Debug)]
@@ -131,7 +131,7 @@ impl MvmAllocator {
 
     pub fn deallocate(&mut self, ptr: usize) -> Result<(), AllocatorError> {
         if ptr < self.mem_start || ptr > self.mem_end {
-            return Err(AllocatorError::InvalidFreePointer);
+            return Err(AllocatorError::InvalidFreePointer(ptr));
         }
 
         let mut iterator = self.allocated.iter_mut();
@@ -139,7 +139,7 @@ impl MvmAllocator {
         for unit in iterator {
             if unit.address == ptr {
                 if unit.restricted {
-                    return Err(AllocatorError::RestrictedUnitAccess);
+                    return Err(AllocatorError::RestrictedUnitAccess(ptr));
                 }
 
                 unit.free = true;
@@ -151,7 +151,7 @@ impl MvmAllocator {
             }
         }
 
-        Err(AllocatorError::InvalidFreePointer)
+        Err(AllocatorError::InvalidFreePointer(ptr))
     }
 }
 
@@ -283,7 +283,7 @@ mod tests {
 
         assert!(matches!(
             allocator.deallocate(1),
-            Err(AllocatorError::InvalidFreePointer)
+            Err(AllocatorError::InvalidFreePointer(1))
         ));
     }
 
@@ -293,7 +293,7 @@ mod tests {
 
         assert!(matches!(
             allocator.deallocate(0),
-            Err(AllocatorError::RestrictedUnitAccess)
+            Err(AllocatorError::RestrictedUnitAccess(0))
         ));
     }
 }
