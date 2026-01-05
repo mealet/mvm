@@ -181,7 +181,7 @@ impl Codegen {
             self.output[ptr as usize + 7] = label_bytes[7];
         }
 
-        let mut mem_size = ((self.output.len() + 128) + 7) & !7;
+        let mut mem_size = (((self.output.len() + 128) + 7) & !7) + 1024;
         let mut stack_size = mem_size / 4;
 
         mem_size = if mem_size < crate::MEMSIZE_DEFAULT {

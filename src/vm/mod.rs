@@ -96,7 +96,8 @@ impl VM {
             return Err(MvmError::OutOfBounds);
         }
 
-        let stack_ptr = (memsize - stack_size) as u64;
+        let mut stack_ptr = (memsize - stack_size) as u64;
+        stack_ptr = (stack_ptr + 0x7) & !0x7;
 
         vm.set_register(R_STACK_POINTER, stack_ptr)?;
         vm.set_register(R_FRAME_POINTER, stack_ptr)?;
