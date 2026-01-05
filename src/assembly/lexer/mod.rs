@@ -78,6 +78,10 @@ impl Lexer {
                 macros::std_constant!("sys_write"),
                 macros::std_constant!("sys_alloc"),
                 macros::std_constant!("sys_free"),
+                macros::std_constant!("sys_memsize"),
+                macros::std_constant!("sys_stacksize"),
+                macros::std_constant!("sys_abort"),
+                macros::std_constant!("sys_sleep"),
             ]),
             std_instructions: HashMap::from([
                 macros::std_instruction!("halt"),

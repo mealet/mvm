@@ -64,7 +64,7 @@ impl VM {
                 }
             }
 
-            // u64 write(i32 output, void* buffer, u64 len)
+            // u64 write(i32 fd, void* buffer, u64 len)
             2 => {
                 let fd = self.get_register(R0)? as libc::c_int;
                 let len = self.get_register(R2)? as usize;
@@ -90,6 +90,30 @@ impl VM {
                 let ptr = self.get_register(R0)? as usize;
 
                 self.allocator.deallocate(ptr)?;
+            }
+
+            // u64 mem_size() ; in bytes
+            5 => {
+                self.set_register(R_ACCUMULATOR, self.memory.len() as u64)?;
+            }
+
+            // u64 stack_size() ; in bytes
+            6 => {
+                self.set_register(R_ACCUMULATOR, self.stack_size as u64)?;
+            }
+
+            // void abort(u64 code)
+            7 => {
+                let code = self.get_register(R0)?;
+                return Err(MvmError::Aborted(code));
+            }
+
+            // void sleep(u64 ms)
+            8 => {
+                let ms = self.get_register(R0)?;
+                let duration = std::time::Duration::from_millis(ms);
+
+                std::thread::sleep(duration);
             }
 
             unknown => {

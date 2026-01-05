@@ -41,6 +41,9 @@ pub enum MvmError {
     #[error("no program `text` section found")]
     NoTextSection,
 
+    #[error("aborted (code: {0})")]
+    Aborted(u64),
+
     #[error("allocator error [{0}]")]
     AllocatorError(#[from] super::allocator::AllocatorError),
 

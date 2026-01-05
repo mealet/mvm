@@ -230,6 +230,10 @@ impl Codegen {
             "sys_write" => 2,
             "sys_alloc" => 3,
             "sys_free" => 4,
+            "sys_memsize" => 5,
+            "sys_stacksize" => 6,
+            "sys_abort" => 7,
+            "sys_sleep" => 8,
 
             _ => unreachable!(),
         }
