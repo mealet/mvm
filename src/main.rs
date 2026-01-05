@@ -154,8 +154,11 @@ fn main() {
                 std::process::exit(1);
             });
 
-            let mut memsize = memsize.parse::<usize>().unwrap_or(0);
-            let mut stacksize = stacksize.parse::<usize>().unwrap_or(0);
+            let args_memsize = memsize.parse::<usize>().unwrap_or(0);
+            let args_stacksize = stacksize.parse::<usize>().unwrap_or(0);
+
+            let mut memsize = 0;
+            let mut stacksize = 0;
 
             let mut metadata = Vec::new();
 
@@ -203,16 +206,26 @@ fn main() {
                 ]) as usize;
             }
 
-            memsize = if memsize == 0 {
+            // yes, this code looks like a shit, but trust me, this works well
+
+            memsize = if memsize < MEMSIZE_DEFAULT {
                 MEMSIZE_DEFAULT
             } else {
                 memsize
             };
-            stacksize = if stacksize == 0 {
+            stacksize = if stacksize < STACKSIZE_DEFAULT {
                 STACKSIZE_DEFAULT
             } else {
                 stacksize
             };
+
+            if args_memsize != 0 {
+                memsize = args_memsize;
+            }
+
+            if args_stacksize != 0 {
+                stacksize = args_stacksize;
+            }
 
             program = program[metadata.len()..].to_vec();
 
