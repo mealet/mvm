@@ -195,12 +195,16 @@ impl Analyzer {
                 // arguments lengths are verified in parser
 
                 match name.as_str() {
-                    "call" => macros::assert_arg!(
-                        self,
-                        "label",
-                        args.first().unwrap(),
-                        Expression::LabelRef(_, _)
-                    ),
+                    "call" => {
+                        macros::assert_arg!(
+                            self,
+                            "label",
+                            args.first().unwrap(),
+                            Expression::LabelRef(_, _)
+                        );
+
+                        self.visit_expression(args.first().unwrap());
+                    },
 
                     "ret" => {}
 

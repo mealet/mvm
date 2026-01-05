@@ -164,7 +164,10 @@ impl Codegen {
         for (ptr, id) in labels_refs {
             let label = labels
                 .get(id)
-                .expect("something went wrong with labels resolver");
+                .unwrap_or_else(|| {
+                    panic!("Label resolver panicked at ID: `{id}`");
+                });
+
             let label_bytes = label.ptr.to_be_bytes();
 
             self.output[ptr as usize] = label_bytes[0];
