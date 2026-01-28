@@ -200,11 +200,11 @@ impl Lexer {
                             }
                         },
 
-                        id if id.is_ascii_alphabetic() => {
+                        id if id.is_alphabetic() => {
                             let mut id = String::new();
                             let id_offset = self.position;
 
-                            while self.peek_char().is_ascii_alphanumeric()
+                            while self.peek_char().is_alphanumeric()
                                 || ALLOWED_ID_CHARS.contains(&self.peek_char())
                             {
                                 id.push(self.peek_char());
@@ -250,7 +250,7 @@ impl Lexer {
                     let mut id = String::new();
                     let id_offset = self.position;
 
-                    while self.peek_char().is_ascii_alphanumeric()
+                    while self.peek_char().is_alphanumeric()
                         || ALLOWED_ID_CHARS.contains(&self.peek_char())
                     {
                         id.push(self.peek_char());
@@ -314,11 +314,11 @@ impl Lexer {
                     let next = self.next_char();
                     self.position -= 1;
 
-                    if symbol == '.' && next.is_ascii_alphabetic() {
+                    if symbol == '.' && next.is_alphabetic() {
                         let mut id = String::new();
                         let id_offset = self.position;
 
-                        while self.peek_char().is_ascii_alphanumeric()
+                        while self.peek_char().is_alphanumeric()
                             || ALLOWED_ID_CHARS.contains(&self.peek_char())
                         {
                             id.push(self.peek_char());
